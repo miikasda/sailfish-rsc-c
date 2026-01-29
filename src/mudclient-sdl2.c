@@ -172,12 +172,6 @@ void mudclient_start_application(mudclient *mud, char *title) {
             int width = mode.w;
             int height = mode.h;
 
-            if (height > width) {
-                int tmp = width;
-                width = height;
-                height = tmp;
-            }
-
             SDL_SetWindowBordered(mud->window, SDL_FALSE);
             SDL_SetWindowPosition(mud->window, 0, 0);
             SDL_SetWindowSize(mud->window, width, height);
@@ -185,6 +179,7 @@ void mudclient_start_application(mudclient *mud, char *title) {
                                     SDL_WINDOW_FULLSCREEN_DESKTOP);
         }
     }
+
 #endif
 
     SDL_SetWindowMinimumSize(mud->window, MUD_MIN_WIDTH, MUD_MIN_HEIGHT);

@@ -38,6 +38,12 @@ static void surface_plot_sprite32_alpha_scale(int32_t *restrict dest,
                                               int height, int l1, int i2,
                                               int j2, int y_inc, int alpha);
 
+#ifndef SDL12
+#ifdef SAILFISH
+static void surface_blit_rot270_scaled(SDL_Surface *src, SDL_Surface *dst);
+#endif
+#endif
+
 static void surface_plot_sprite32_scale(int32_t *restrict dest,
                                         int32_t *restrict src, int j, int k,
                                         int dest_pos, int dest_offset,
@@ -253,7 +259,11 @@ void surface_draw(Surface *surface) {
     SDL_Flip(mud->screen);
 #else
     if (mud->window != NULL) {
+#ifdef SAILFISH
+        surface_blit_rot270_scaled(mud->pixel_surface, mud->screen);
+#else
         SDL_BlitScaled(mud->pixel_surface, NULL, mud->screen, NULL);
+#endif
         // SDL_BlitSurface(mud->pixel_surface, NULL, mud->screen, NULL);
         SDL_UpdateWindowSurface(mud->window);
     }
@@ -264,6 +274,110 @@ void surface_draw(Surface *surface) {
     surface_gl_draw(surface, GL_DEPTH_BOTH);
 #endif
 }
+
+#ifndef SDL12
+#ifdef SAILFISH
+static void surface_blit_rot270_scaled(SDL_Surface *src, SDL_Surface *dst) {
+    if (src == NULL || dst == NULL) {
+        return;
+    }
+
+    if (src->format->BytesPerPixel != 4 || dst->format->BytesPerPixel != 4) {
+        SDL_BlitScaled(src, NULL, dst, NULL);
+        return;
+    }
+
+    if (SDL_MUSTLOCK(src)) {
+        SDL_LockSurface(src);
+    }
+    if (SDL_MUSTLOCK(dst)) {
+        SDL_LockSurface(dst);
+    }
+
+    SDL_FillRect(dst, NULL, 0);
+
+    const int src_w = src->w;
+    const int src_h = src->h;
+    const int dst_w = dst->w;
+    const int dst_h = dst->h;
+
+    uint8_t *src_pixels = (uint8_t *)src->pixels;
+    uint8_t *dst_pixels = (uint8_t *)dst->pixels;
+    const int src_pitch = src->pitch;
+    const int dst_pitch = dst->pitch;
+
+    const int same_format = src->format->format == dst->format->format;
+
+    if (src_w <= 0 || src_h <= 0 || dst_w <= 0 || dst_h <= 0) {
+        if (SDL_MUSTLOCK(dst)) {
+            SDL_UnlockSurface(dst);
+        }
+        if (SDL_MUSTLOCK(src)) {
+            SDL_UnlockSurface(src);
+        }
+        return;
+    }
+
+    float scale_w = dst_w / (float)src_h;
+    float scale_h = dst_h / (float)src_w;
+    float scale = scale_w < scale_h ? scale_w : scale_h;
+
+    int scaled_w = (int)(src_h * scale);
+    int scaled_h = (int)(src_w * scale);
+
+    if (scaled_w <= 0 || scaled_h <= 0) {
+        if (SDL_MUSTLOCK(dst)) {
+            SDL_UnlockSurface(dst);
+        }
+        if (SDL_MUSTLOCK(src)) {
+            SDL_UnlockSurface(src);
+        }
+        return;
+    }
+
+    int x_offset = (dst_w - scaled_w) / 2;
+    int y_offset = (dst_h - scaled_h) / 2;
+
+    for (int y = 0; y < scaled_h; y++) {
+        int src_x = (y * src_w) / scaled_h;
+        int dst_y = y_offset + y;
+
+        if (dst_y < 0 || dst_y >= dst_h) {
+            continue;
+        }
+
+        for (int x = 0; x < scaled_w; x++) {
+            int src_y = ((scaled_w - 1 - x) * src_h) / scaled_w;
+            int dst_x = x_offset + x;
+
+            if (dst_x < 0 || dst_x >= dst_w) {
+                continue;
+            }
+
+            uint32_t *src_pixel =
+                (uint32_t *)(src_pixels + (src_y * src_pitch) + (src_x * 4));
+            uint32_t *dst_pixel =
+                (uint32_t *)(dst_pixels + (dst_y * dst_pitch) + (dst_x * 4));
+
+            if (same_format) {
+                *dst_pixel = *src_pixel;
+            } else {
+                uint8_t r, g, b, a;
+                SDL_GetRGBA(*src_pixel, src->format, &r, &g, &b, &a);
+                *dst_pixel = SDL_MapRGBA(dst->format, r, g, b, a);
+            }
+        }
+    }
+
+    if (SDL_MUSTLOCK(dst)) {
+        SDL_UnlockSurface(dst);
+    }
+    if (SDL_MUSTLOCK(src)) {
+        SDL_UnlockSurface(src);
+    }
+}
+#endif
+#endif
 
 void surface_black_screen(Surface *surface) {
 #ifdef RENDER_GL

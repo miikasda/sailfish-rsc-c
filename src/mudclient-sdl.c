@@ -23,6 +23,53 @@ static int mudclient_touch_start_y = 0;
 static int64_t mudclient_finger_1_id = 0;
 static int64_t mudclient_finger_2_id = 0;
 
+#ifdef SAILFISH
+static void sailfish_rotate_touch(mudclient *mud, int window_width,
+                                  int window_height, int *touch_x,
+                                  int *touch_y) {
+    if (window_width <= 0 || window_height <= 0 || mud->game_width <= 0 ||
+        mud->game_height <= 0) {
+        return;
+    }
+
+    float scale_w = window_width / (float)mud->game_height;
+    float scale_h = window_height / (float)mud->game_width;
+    float scale = scale_w < scale_h ? scale_w : scale_h;
+
+    int scaled_w = (int)(mud->game_height * scale);
+    int scaled_h = (int)(mud->game_width * scale);
+
+    if (scaled_w <= 0 || scaled_h <= 0) {
+        return;
+    }
+
+    int x_offset = (window_width - scaled_w) / 2;
+    int y_offset = (window_height - scaled_h) / 2;
+
+    int local_x = *touch_x - x_offset;
+    int local_y = *touch_y - y_offset;
+
+    if (local_x < 0) {
+        local_x = 0;
+    } else if (local_x >= scaled_w) {
+        local_x = scaled_w - 1;
+    }
+
+    if (local_y < 0) {
+        local_y = 0;
+    } else if (local_y >= scaled_h) {
+        local_y = scaled_h - 1;
+    }
+
+    int rotated_x = (local_y * mud->game_width) / scaled_h;
+    int rotated_y =
+        ((scaled_w - 1 - local_x) * mud->game_height) / scaled_w;
+
+    *touch_x = rotated_x;
+    *touch_y = rotated_y;
+}
+#endif
+
 void mudclient_poll_events(mudclient *mud) {
     if (!mudclient_has_right_clicked && !mudclient_horizontal_drag &&
         !mudclient_vertical_drag && mudclient_finger_1_down &&
@@ -67,19 +114,114 @@ void mudclient_poll_events(mudclient *mud) {
         }
         case SDL_MOUSEMOTION:
             if (!mudclient_is_touch(mud)) {
+#ifdef SAILFISH
+                int window_width = mud->game_width;
+                int window_height = mud->game_height;
+
+#ifdef SDL2
+                if (mud->window != NULL) {
+                    SDL_GetWindowSize(mud->window, &window_width,
+                                      &window_height);
+                }
+#endif
+
+                int touch_x = event.motion.x;
+                int touch_y = event.motion.y;
+
+                int raw_x = touch_x;
+                int raw_y = touch_y;
+                sailfish_rotate_touch(mud, window_width, window_height,
+                                      &touch_x, &touch_y);
+#ifdef SAILFISH
+                static int logged = 0;
+                if (!logged) {
+                    logged = 1;
+                    printf("SAILFISH mouse motion raw=%d,%d rotated=%d,%d win=%dx%d game=%dx%d\n",
+                           raw_x, raw_y, touch_x, touch_y, window_width,
+                           window_height, mud->game_width, mud->game_height);
+                    fflush(stdout);
+                }
+#endif
+                mudclient_mouse_moved(mud, touch_x, touch_y);
+#else
                 mudclient_mouse_moved(mud, event.motion.x, event.motion.y);
+#endif
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
             if (!mudclient_is_touch(mud)) {
+#ifdef SAILFISH
+                int window_width = mud->game_width;
+                int window_height = mud->game_height;
+
+#ifdef SDL2
+                if (mud->window != NULL) {
+                    SDL_GetWindowSize(mud->window, &window_width,
+                                      &window_height);
+                }
+#endif
+
+                int touch_x = event.button.x;
+                int touch_y = event.button.y;
+
+                int raw_x = touch_x;
+                int raw_y = touch_y;
+                sailfish_rotate_touch(mud, window_width, window_height,
+                                      &touch_x, &touch_y);
+#ifdef SAILFISH
+                static int logged_down = 0;
+                if (!logged_down) {
+                    logged_down = 1;
+                    printf("SAILFISH mouse down raw=%d,%d rotated=%d,%d win=%dx%d game=%dx%d\n",
+                           raw_x, raw_y, touch_x, touch_y, window_width,
+                           window_height, mud->game_width, mud->game_height);
+                    fflush(stdout);
+                }
+#endif
+                mudclient_mouse_pressed(mud, touch_x, touch_y,
+                                        event.button.button);
+#else
                 mudclient_mouse_pressed(mud, event.button.x, event.button.y,
                                         event.button.button);
+#endif
             }
             break;
         case SDL_MOUSEBUTTONUP:
             if (!mudclient_is_touch(mud)) {
+#ifdef SAILFISH
+                int window_width = mud->game_width;
+                int window_height = mud->game_height;
+
+#ifdef SDL2
+                if (mud->window != NULL) {
+                    SDL_GetWindowSize(mud->window, &window_width,
+                                      &window_height);
+                }
+#endif
+
+                int touch_x = event.button.x;
+                int touch_y = event.button.y;
+
+                int raw_x = touch_x;
+                int raw_y = touch_y;
+                sailfish_rotate_touch(mud, window_width, window_height,
+                                      &touch_x, &touch_y);
+#ifdef SAILFISH
+                static int logged_up = 0;
+                if (!logged_up) {
+                    logged_up = 1;
+                    printf("SAILFISH mouse up raw=%d,%d rotated=%d,%d win=%dx%d game=%dx%d\n",
+                           raw_x, raw_y, touch_x, touch_y, window_width,
+                           window_height, mud->game_width, mud->game_height);
+                    fflush(stdout);
+                }
+#endif
+                mudclient_mouse_released(mud, touch_x, touch_y,
+                                         event.button.button);
+#else
                 mudclient_mouse_released(mud, event.button.x, event.button.y,
                                          event.button.button);
+#endif
             }
             break;
 #ifndef SDL12
@@ -116,6 +258,11 @@ void mudclient_poll_events(mudclient *mud) {
 
             int touch_x = event.tfinger.x * window_width;
             int touch_y = event.tfinger.y * window_height;
+
+#ifdef SAILFISH
+            sailfish_rotate_touch(mud, window_width, window_height, &touch_x,
+                                  &touch_y);
+#endif
 
 #ifdef __SWITCH__
             mudclient_mouse_moved(mud, touch_x, touch_y);
@@ -196,6 +343,11 @@ void mudclient_poll_events(mudclient *mud) {
             int touch_x = event.tfinger.x * window_width;
             int touch_y = event.tfinger.y * window_height;
 
+#ifdef SAILFISH
+            sailfish_rotate_touch(mud, window_width, window_height, &touch_x,
+                                  &touch_y);
+#endif
+
 #ifdef __SWITCH__
             mudclient_mouse_pressed(mud, touch_x, touch_y, switch_mouse_button);
 #else
@@ -251,6 +403,11 @@ void mudclient_poll_events(mudclient *mud) {
 
             int touch_x = event.tfinger.x * window_width;
             int touch_y = event.tfinger.y * window_height;
+
+#ifdef SAILFISH
+            sailfish_rotate_touch(mud, window_width, window_height, &touch_x,
+                                  &touch_y);
+#endif
 
 #ifdef __SWITCH__
             mudclient_mouse_released(mud, touch_x, touch_y,
