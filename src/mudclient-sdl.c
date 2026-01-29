@@ -105,8 +105,17 @@ void mudclient_poll_events(mudclient *mud) {
             }
 #endif
 
-            int touch_x = event.tfinger.x * mud->game_width;
-            int touch_y = event.tfinger.y * mud->game_height;
+            int window_width = mud->game_width;
+            int window_height = mud->game_height;
+
+#ifdef SDL2
+            if (mud->window != NULL) {
+                SDL_GetWindowSize(mud->window, &window_width, &window_height);
+            }
+#endif
+
+            int touch_x = event.tfinger.x * window_width;
+            int touch_y = event.tfinger.y * window_height;
 
 #ifdef __SWITCH__
             mudclient_mouse_moved(mud, touch_x, touch_y);
@@ -159,7 +168,7 @@ void mudclient_poll_events(mudclient *mud) {
                     mud->mouse_scroll_delta =
                         (event.tfinger.dy *
                          (mud->options->touch_vertical_drag / 100.0f)) *
-                        mud->game_height;
+                        window_height;
                 }
 
                 mudclient_mouse_moved(mud, touch_x, touch_y);
@@ -175,8 +184,17 @@ void mudclient_poll_events(mudclient *mud) {
             }
 #endif
 
-            int touch_x = event.tfinger.x * mud->game_width;
-            int touch_y = event.tfinger.y * mud->game_height;
+            int window_width = mud->game_width;
+            int window_height = mud->game_height;
+
+#ifdef SDL2
+            if (mud->window != NULL) {
+                SDL_GetWindowSize(mud->window, &window_width, &window_height);
+            }
+#endif
+
+            int touch_x = event.tfinger.x * window_width;
+            int touch_y = event.tfinger.y * window_height;
 
 #ifdef __SWITCH__
             mudclient_mouse_pressed(mud, touch_x, touch_y, switch_mouse_button);
@@ -222,8 +240,17 @@ void mudclient_poll_events(mudclient *mud) {
             }
 #endif
 
-            int touch_x = event.tfinger.x * mud->game_width;
-            int touch_y = event.tfinger.y * mud->game_height;
+            int window_width = mud->game_width;
+            int window_height = mud->game_height;
+
+#ifdef SDL2
+            if (mud->window != NULL) {
+                SDL_GetWindowSize(mud->window, &window_width, &window_height);
+            }
+#endif
+
+            int touch_x = event.tfinger.x * window_width;
+            int touch_y = event.tfinger.y * window_height;
 
 #ifdef __SWITCH__
             mudclient_mouse_released(mud, touch_x, touch_y,

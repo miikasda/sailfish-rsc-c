@@ -3,7 +3,11 @@ Type=Application
 Encoding=UTF-8
 Name=rsc-c mudclient
 Comment=Cross-platform RuneScape Classic source port
-Icon=rsc-c
-Exec=mudclient
+Icon=harbour-rsc-c
+Exec=/usr/bin/env LD_LIBRARY_PATH=/usr/lib64:/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64 mudclient
 Terminal=false
 Categories=Game;AdventureGame;RolePlaying;
+X-Nemo-Application-Type=generic
+X-Nemo-Orientation=landscape
+[X-Sailjail]
+Sandboxing=Disabled

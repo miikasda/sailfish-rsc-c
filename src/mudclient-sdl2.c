@@ -77,6 +77,10 @@ void mudclient_start_application(mudclient *mud, char *title) {
 
     int init = SDL_INIT_VIDEO;
 
+#ifdef SAILFISH
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
+
     if (mud->options->members && !mud->options->lowmem) {
         init |= SDL_INIT_AUDIO;
     }
@@ -159,6 +163,29 @@ void mudclient_start_application(mudclient *mud, char *title) {
     mud->window =
         SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                          mud->game_width, mud->game_height, windowflags);
+
+#ifdef SAILFISH
+    if (mud->window != NULL) {
+        SDL_DisplayMode mode;
+
+        if (SDL_GetDesktopDisplayMode(0, &mode) == 0) {
+            int width = mode.w;
+            int height = mode.h;
+
+            if (height > width) {
+                int tmp = width;
+                width = height;
+                height = tmp;
+            }
+
+            SDL_SetWindowBordered(mud->window, SDL_FALSE);
+            SDL_SetWindowPosition(mud->window, 0, 0);
+            SDL_SetWindowSize(mud->window, width, height);
+            SDL_SetWindowFullscreen(mud->window,
+                                    SDL_WINDOW_FULLSCREEN_DESKTOP);
+        }
+    }
+#endif
 
     SDL_SetWindowMinimumSize(mud->window, MUD_MIN_WIDTH, MUD_MIN_HEIGHT);
 

@@ -1,6 +1,7 @@
 #CC = clang
 DEBUG ?= 1
 SDL2 ?= 1
+SAILFISH ?= 0
 GLAD ?= 0
 RENDER_GL ?= 0
 LEGACY_GL ?= 0
@@ -8,6 +9,10 @@ VANILLA_IS_DEFAULT ?= 0
 USE_LOCOLOUR ?= 0
 USE_TOONSCAPE ?= 0
 WITH_OPENSSL ?= 1
+
+ifeq ($(SAILFISH), 1)
+WITH_OPENSSL := 0
+endif
 
 DESTDIR?=
 PREFIX?= /usr/local
@@ -36,6 +41,12 @@ LDFLAGS += $(shell sdl-config --libs)
 ifeq ($(RENDER_GL), 1)
 LEGACY_GL = 1
 endif
+endif
+
+SAILFISH_WRAPPER :=
+
+ifeq ($(SAILFISH), 1)
+CFLAGS += -DSAILFISH
 endif
 
 ifeq ($(VANILLA_IS_DEFAULT), 1)
