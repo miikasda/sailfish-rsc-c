@@ -1,6 +1,6 @@
 # Sailfish OS build notes (in-progress)
 
-Commands confirmed so far for a Harbour-safe SDL2/software build.
+Commands confirmed so far for a Sailfish OS SDL2/software build.
 
 ## 1. Install SDK targets on the host
 Run once after installing the Sailfish SDK:
@@ -16,10 +16,21 @@ selected target image:
 
 ```bash
 sfdk engine exec sb2 -t SailfishOS-5.0.0.62-aarch64.default -m sdk-install -R \
-    zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel
+    zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel \
+    maliit-framework-wayland-devel glib2-devel
 sfdk engine exec sb2 -t SailfishOS-5.0.0.62-armv7hl.default -m sdk-install -R \
-    zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel
+    zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel \
+    maliit-framework-wayland-devel glib2-devel
 ```
+
+### Maliit (on-screen keyboard) notes
+- Build requires `pkg-config --cflags maliit-glib` to work.
+- `maliit-framework-wayland-devel` provides
+  `/usr/include/maliit-2/maliit-glib/maliitinputmethod.h`.
+- For the RPM spec, add `BuildRequires: pkgconfig(maliit-glib)` and
+  `BuildRequires: pkgconfig(glib-2.0)`.
+- Runtime dependency on device: `maliit-framework-wayland-glib`
+  (provides `libmaliit-glib.so.2`).
 
 ## 3. Run the build inside the SDK
 From the workspace root (directory containing `.sfdk/`):
@@ -65,8 +76,9 @@ exit
 exit
 ```
 
-Launch from the app grid or, to mirror it over SSH and keep orientation hints,
-use `invoker --type=generic --desktop-file /usr/share/applications/harbour-rsc-c.desktop /usr/bin/env LD_LIBRARY_PATH=/usr/lib64:/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64 mudclient`.
+Launch from the app grid or run `/usr/bin/harbour-rsc-c` from a terminal.
+If you run `mudclient` directly, set:
+`LD_LIBRARY_PATH=/usr/lib64:/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64`.
 
 If the icon doesn't start, capture Sailjail's message using:
 

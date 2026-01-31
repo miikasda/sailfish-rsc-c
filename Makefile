@@ -9,9 +9,11 @@ VANILLA_IS_DEFAULT ?= 0
 USE_LOCOLOUR ?= 0
 USE_TOONSCAPE ?= 0
 WITH_OPENSSL ?= 1
+MALIIT ?= 0
 
 ifeq ($(SAILFISH), 1)
 WITH_OPENSSL := 0
+MALIIT := 1
 endif
 
 DESTDIR?=
@@ -47,6 +49,12 @@ SAILFISH_WRAPPER :=
 
 ifeq ($(SAILFISH), 1)
 CFLAGS += -DSAILFISH
+endif
+
+ifeq ($(MALIIT), 1)
+MALIIT_PKG ?= maliit-glib
+CFLAGS += $(shell pkg-config --cflags $(MALIIT_PKG)) -DSAILFISH_MALIIT
+LDFLAGS += $(shell pkg-config --libs $(MALIIT_PKG))
 endif
 
 ifeq ($(VANILLA_IS_DEFAULT), 1)

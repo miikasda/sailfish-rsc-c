@@ -110,6 +110,11 @@ void mudclient_poll_events(mudclient *mud) {
                 SDL_StopTextInput();
             }
 #endif
+#ifdef SAILFISH
+            if (code == K_ENTER || code == K_ESCAPE) {
+                sailfish_osk_hide();
+            }
+#endif
             break;
         }
         case SDL_MOUSEMOTION:
@@ -607,5 +612,9 @@ void mudclient_poll_events(mudclient *mud) {
 #endif
         }
     }
+
+#ifdef SAILFISH
+    sailfish_osk_poll(mud);
+#endif
 }
 #endif

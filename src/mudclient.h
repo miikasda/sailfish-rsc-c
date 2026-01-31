@@ -1181,6 +1181,10 @@ int mudclient_is_touch(mudclient *mud);
 void mudclient_trigger_keyboard(mudclient *mud, char *text, int is_password,
                                 int x, int y, int width, int height, int font,
                                 int is_centred);
+#ifdef SAILFISH
+void sailfish_osk_poll(mudclient *mud);
+void sailfish_osk_hide(void);
+#endif
 #ifdef _3DS
 void mudclient_3ds_flush_audio(mudclient *mud);
 void mudclient_3ds_open_keyboard(mudclient *mud);

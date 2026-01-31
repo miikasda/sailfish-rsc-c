@@ -1,4 +1,5 @@
 #include "mudclient.h"
+#include "sailfish-osk.h"
 
 #ifdef EMSCRIPTEN
 /* clang doesn't know what triple equals is, understandably */
@@ -65,6 +66,7 @@ int last_canvas_check = 0;
 
 mudclient *global_mud = NULL;
 #endif
+
 
 int mudclient_finger_1_x = 0;
 int mudclient_finger_1_y = 0;
@@ -5087,6 +5089,8 @@ int mudclient_is_touch(mudclient *mud) {
 
 #ifdef ANDROID
     return 1; // TODO maybe still make this toggleable
+#elif defined(SAILFISH)
+    return 1;
 #elif defined(EMSCRIPTEN)
     return browser_is_touch();
 #else
@@ -5109,6 +5113,8 @@ void mudclient_trigger_keyboard(mudclient *mud, char *text, int is_password,
     (void)is_centred;
 #ifdef ANDROID
     SDL_StartTextInput();
+#elif defined(SAILFISH)
+    sailfish_osk_show(mud, text, is_password);
 #elif defined(EMSCRIPTEN)
     int is_scaled = mudclient_is_ui_scaled(mud);
 
