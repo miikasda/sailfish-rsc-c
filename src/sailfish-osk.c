@@ -20,6 +20,9 @@ static GMutex osk_init_mutex;
 static char *osk_preedit = NULL;
 static int osk_orientation_angle = -1;
 static int osk_hide_pending = 0;
+static int osk_last_orientation = 0;
+static guint osk_show_timeout_id = 0;
+static int osk_first_show = 1;
 
 static int sailfish_osk_get_orientation_angle(mudclient *mud) {
     if (osk_orientation_angle >= 0) {
@@ -198,7 +201,6 @@ static gboolean sailfish_osk_handle_key_event(
     }
 
     if (enter && arg_unnamed_arg0 == 6) {
-        fprintf(stderr, "SAILFISH OSK: enter pressed\n");
         mudclient_key_pressed(osk_mud, K_ENTER, K_ENTER);
         mudclient_key_released(osk_mud, K_ENTER);
         osk_hide_pending = 1;
@@ -261,6 +263,23 @@ static void sailfish_osk_init(void) {
     g_mutex_unlock(&osk_init_mutex);
 }
 
+static gboolean sailfish_osk_show_delayed(gpointer data) {
+    (void)data;
+
+    if (osk_server != NULL) {
+        GError *error = NULL;
+        if (!maliit_server_call_show_input_method_sync(osk_server, NULL,
+                                                       &error)) {
+            fprintf(stderr, "SAILFISH OSK: show_input_method failed: %s\n",
+                    error ? error->message : "unknown error");
+            g_clear_error(&error);
+        }
+    }
+
+    osk_show_timeout_id = 0;
+    return G_SOURCE_REMOVE;
+}
+
 void sailfish_osk_show(mudclient *mud, const char *text, int is_password) {
     (void)text;
     (void)is_password;
@@ -274,6 +293,7 @@ void sailfish_osk_show(mudclient *mud, const char *text, int is_password) {
 
     GError *error = NULL;
     int angle = sailfish_osk_get_orientation_angle(mud);
+    osk_last_orientation = angle;
 
     if (!maliit_server_call_app_orientation_about_to_change_sync(
             osk_server, angle, NULL, &error)) {
@@ -291,16 +311,33 @@ void sailfish_osk_show(mudclient *mud, const char *text, int is_password) {
         g_clear_error(&error);
     }
 
-    if (!maliit_server_call_show_input_method_sync(osk_server, NULL, &error)) {
-        fprintf(stderr, "SAILFISH OSK: show_input_method failed: %s\n",
-                error ? error->message : "unknown error");
-        g_clear_error(&error);
+    if (osk_show_timeout_id != 0) {
+        g_source_remove(osk_show_timeout_id);
+        osk_show_timeout_id = 0;
+    }
+
+    if (osk_first_show) {
+        osk_first_show = 0;
+        osk_show_timeout_id =
+            g_timeout_add(150, sailfish_osk_show_delayed, NULL);
+    } else {
+        if (!maliit_server_call_show_input_method_sync(osk_server, NULL,
+                                                       &error)) {
+            fprintf(stderr, "SAILFISH OSK: show_input_method failed: %s\n",
+                    error ? error->message : "unknown error");
+            g_clear_error(&error);
+        }
     }
 }
 
 void sailfish_osk_hide(void) {
     if (osk_server == NULL) {
         return;
+    }
+
+    if (osk_show_timeout_id != 0) {
+        g_source_remove(osk_show_timeout_id);
+        osk_show_timeout_id = 0;
     }
 
     GError *error = NULL;
