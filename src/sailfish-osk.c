@@ -158,11 +158,14 @@ static gboolean sailfish_osk_handle_key_event(
     gint arg_unnamed_arg5, guchar arg_unnamed_arg6, gpointer user_data) {
     (void)object;
     int backspace = 0;
+    int enter = 0;
 
     if (arg_unnamed_arg3 != NULL && arg_unnamed_arg3[0] != '\0') {
         unsigned char ch = (unsigned char)arg_unnamed_arg3[0];
         if (ch == '\b' || ch == 0x7f) {
             backspace = 1;
+        } else if (ch == '\n' || ch == '\r') {
+            enter = 1;
         }
     }
 
@@ -180,8 +183,23 @@ static gboolean sailfish_osk_handle_key_event(
         }
     }
 
+    if (!enter) {
+        if (arg_unnamed_arg1 == 16777220 || arg_unnamed_arg2 == 16777220) {
+            enter = 1;
+        } else if (arg_unnamed_arg1 == 16777221 ||
+                   arg_unnamed_arg2 == 16777221) {
+            enter = 1;
+        }
+    }
+
     if (backspace && arg_unnamed_arg0 == 6) {
         sailfish_osk_send_backspaces(1);
+    }
+
+    if (enter && arg_unnamed_arg0 == 6) {
+        fprintf(stderr, "SAILFISH OSK: enter pressed\n");
+        mudclient_key_pressed(osk_mud, K_ENTER, K_ENTER);
+        mudclient_key_released(osk_mud, K_ENTER);
     }
 
     (void)arg_unnamed_arg0;
