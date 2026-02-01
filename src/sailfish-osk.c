@@ -19,6 +19,7 @@ static int osk_initialized = 0;
 static GMutex osk_init_mutex;
 static char *osk_preedit = NULL;
 static int osk_orientation_angle = -1;
+static int osk_hide_pending = 0;
 
 static int sailfish_osk_get_orientation_angle(mudclient *mud) {
     if (osk_orientation_angle >= 0) {
@@ -200,6 +201,7 @@ static gboolean sailfish_osk_handle_key_event(
         fprintf(stderr, "SAILFISH OSK: enter pressed\n");
         mudclient_key_pressed(osk_mud, K_ENTER, K_ENTER);
         mudclient_key_released(osk_mud, K_ENTER);
+        osk_hide_pending = 1;
     }
 
     (void)arg_unnamed_arg0;
@@ -313,6 +315,11 @@ void sailfish_osk_poll(mudclient *mud) {
     (void)mud;
     while (g_main_context_pending(NULL)) {
         g_main_context_iteration(NULL, FALSE);
+    }
+
+    if (osk_hide_pending) {
+        osk_hide_pending = 0;
+        sailfish_osk_hide();
     }
 }
 
