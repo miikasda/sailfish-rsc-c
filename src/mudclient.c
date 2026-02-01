@@ -5047,6 +5047,26 @@ void mudclient_on_resize(mudclient *mud) {
     }
 #endif
 
+#ifdef SAILFISH
+    {
+        int window_w = new_width;
+        int window_h = new_height;
+
+        if (window_w > 0 && window_h > 0) {
+            float target_aspect = window_h / (float)window_w;
+            float base_aspect = MUD_WIDTH / (float)MUD_HEIGHT;
+
+            if (target_aspect > base_aspect) {
+                new_height = MUD_HEIGHT;
+                new_width = (int)roundf(new_height * target_aspect);
+            } else {
+                new_width = MUD_WIDTH;
+                new_height = (int)roundf(new_width / target_aspect);
+            }
+        }
+    }
+#endif
+
     mud->game_width = new_width;
     mud->game_height = new_height;
 

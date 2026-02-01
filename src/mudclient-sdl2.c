@@ -178,6 +178,8 @@ void mudclient_start_application(mudclient *mud, char *title) {
             SDL_SetWindowFullscreen(mud->window,
                                     SDL_WINDOW_FULLSCREEN_DESKTOP);
         }
+
+        mudclient_on_resize(mud);
     }
 
 #endif
