@@ -31,60 +31,33 @@ sfdk engine exec sb2 -t SailfishOS-5.0.0.62-armv7hl.default -m sdk-install -R \
   `BuildRequires: pkgconfig(glib-2.0)`.
 - Runtime dependency on device: `maliit-framework-wayland-glib`
   (provides `libmaliit-glib.so.2`).
+- If OSK shows but Enter stops responding, a device reboot has fixed it.
+- Alternative to reboot (often enough):
+  - `systemctl --user restart maliit-server.service`
+  - `pkill -f maliit-server`
 
-## 3. Run the build inside the SDK
-From the workspace root (directory containing `.sfdk/`):
+## 3. Build RPM with sfdk
+From the project root:
 
 ```bash
-cd ~/sailfish_projects
-sfdk build-shell
+cd ~/sailfish_projects/rsc-c
+sfdk build
 ```
 
-Inside the build shell (project mounted under `/home/nemo/workspace/rsc-c`):
+The RPM appears under:
 
-```bash
-cd /home/nemo/workspace/rsc-c
-./build-sailfish.sh
-exit
+```
+RPMS/aarch64/rsc-c-*.aarch64.rpm
 ```
 
-The `install-root` directory now contains the staged `/usr/bin` and `/usr/share`
-tree ready for packaging or manual deployment.
-
-
-## 4. Copy staged files to a device
-Use plain scp/rsync from the host (make sure the IP isn't prefixed with `$`).
-Example:
+## 4. Install on device (RPM)
+Copy the RPM and install it on the phone:
 
 ```bash
-rsync -av install-root/ defaultuser@192.168.1.169:/home/defaultuser/rsc-c-staging/
-```
-
-If USB networking causes hangs, fall back to `sfdk deploy` or run `scp` from
-inside `sfdk build-shell`.
-
-## 5. Install on device
-SSH into the phone, escalate with `devel-su`, and place the files:
-
-```bash
+scp RPMS/aarch64/rsc-c-*.aarch64.rpm defaultuser@192.168.1.169:/home/defaultuser/
 ssh defaultuser@192.168.1.169
-
 devel-su
-cd /home/defaultuser/rsc-c-staging/install-root
-./install.sh
-exit
-exit
+rpm -Uvh /home/defaultuser/rsc-c-*.aarch64.rpm
 ```
 
 Launch from the app grid or run `/usr/bin/harbour-rsc-c` from a terminal.
-If you run `mudclient` directly, set:
-`LD_LIBRARY_PATH=/usr/lib64:/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64`.
-
-If the icon doesn't start, capture Sailjail's message using:
-
-```bash
-journalctl --user -u mapplauncherd.service -f
-```
-
-Tap the icon in another SSH session and note the error line; it tells us
-what Sailjail rejected.
