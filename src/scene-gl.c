@@ -66,6 +66,68 @@ void scene_gl_update_camera(Scene *scene) {
 
 /* normal GL only */
 #ifdef RENDER_GL
+#ifdef SAILFISH
+static void scene_gl_get_mouse_pixels(Scene *scene, int game_x, int game_y,
+                                      int *out_x, int *out_y, int *out_w,
+                                      int *out_h) {
+    mudclient *mud = scene->surface->mud;
+    SDL_Window *window = mud->gl_window ? mud->gl_window : mud->window;
+
+    if (window != NULL) {
+        int window_width = 0;
+        int window_height = 0;
+        SDL_GetWindowSize(window, &window_width, &window_height);
+
+        int game_width = mud->game_width;
+        int game_height = mud->game_height;
+
+        if (window_width > 0 && window_height > 0 && game_width > 0 &&
+            game_height > 0) {
+            int raw_x = mud->window_mouse_x;
+            int raw_y = mud->window_mouse_y;
+
+            if (raw_x >= 0 && raw_x < window_width && raw_y >= 0 &&
+                raw_y < window_height) {
+                *out_x = raw_x;
+                *out_y = window_height - 1 - raw_y;
+                *out_w = window_width;
+                *out_h = window_height;
+                return;
+            }
+
+            float scale_w = window_width / (float)game_height;
+            float scale_h = window_height / (float)game_width;
+            float scale = scale_w < scale_h ? scale_w : scale_h;
+
+            int scaled_w = (int)(game_height * scale);
+            int scaled_h = (int)(game_width * scale);
+
+            int x_offset = (window_width - scaled_w) / 2;
+            int y_offset = (window_height - scaled_h) / 2;
+
+            int local_y = (int)((game_x * (float)scaled_h) / game_width);
+            int local_x =
+                (scaled_w - 1) -
+                (int)((game_y * (float)scaled_w) / game_height);
+
+            int screen_x = x_offset + local_x;
+            int screen_y = y_offset + local_y;
+
+            *out_x = screen_x;
+            *out_y = window_height - 1 - screen_y;
+            *out_w = window_width;
+            *out_h = window_height;
+            return;
+        }
+    }
+
+    *out_x = game_x;
+    *out_y = scene->surface->height - game_y;
+    *out_w = scene->surface->width;
+    *out_h = scene->surface->height;
+}
+#endif
+
 void scene_gl_draw_game_model(Scene *scene, GameModel *game_model) {
     if (game_model->gl_ebo_offset == -1 || !game_model->visible) {
         return;
@@ -152,7 +214,8 @@ void scene_gl_render(Scene *scene) {
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
-    glViewport(0, 13, scene->width, scene_height);
+    mudclient_gl_viewport(scene->surface->mud, 0, 13, scene->width,
+                          scene_height);
 
     shader_use(&scene->game_model_shader);
 
@@ -179,7 +242,7 @@ void scene_gl_render(Scene *scene) {
 
     glm_vec3_add(ray_start, scene->gl_mouse_ray, ray_end);
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
     /* webgl does not support depth buffer reading :( */
     if (scene->gl_terrain_pick_step == GL_PICK_STEP_SAMPLE) {
         GameModel *terrain_picked[4] = {0};
@@ -203,6 +266,15 @@ void scene_gl_render(Scene *scene) {
         glDisable(GL_CULL_FACE);
 
         shader_use(&scene->game_model_pick_shader);
+#ifdef SAILFISH
+        {
+            mat4 rotation = GLM_MAT4_IDENTITY_INIT;
+            glm_rotate(rotation, glm_rad(-90.0f),
+                       (vec3){0.0f, 0.0f, 1.0f});
+            shader_set_mat4(&scene->game_model_pick_shader, "u_rotate",
+                            rotation);
+        }
+#endif
 
         game_model_gl_buffer_pick_models(&scene->gl_pick_buffer, terrain_picked,
                                          terrain_picked_length);
@@ -226,8 +298,17 @@ void scene_gl_render(Scene *scene) {
                 (void *)(game_model->gl_pick_ebo_offset * sizeof(GLuint)));
         }
 
-        int mouse_x = scene->mouse_x + (scene->surface->width / 2);
-        int mouse_y = scene->surface->height - scene->mouse_y;
+        int game_x = scene->mouse_x + (scene->surface->width / 2);
+        int game_y = scene->mouse_y;
+        int mouse_x = game_x;
+        int mouse_y = scene->surface->height - game_y;
+        int bounds_w = scene->surface->width;
+        int bounds_h = scene->surface->height;
+
+#ifdef SAILFISH
+        scene_gl_get_mouse_pixels(scene, game_x, game_y, &mouse_x, &mouse_y,
+                                  &bounds_w, &bounds_h);
+#endif
         uint8_t pick_colour[4] = {0};
 
         glReadPixels(mouse_x, mouse_y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -237,7 +318,6 @@ void scene_gl_render(Scene *scene) {
 
         scene->gl_terrain_pick_step = GL_PICK_STEP_FINISHED;
         scene->gl_pick_face_tag = (pick_colour[1] << 8) + pick_colour[0];
-
         shader_use(&scene->game_model_shader);
 
         glEnable(GL_CULL_FACE);
@@ -255,8 +335,17 @@ void scene_gl_render(Scene *scene) {
     }
 
     if (scene->gl_terrain_pick_step == GL_PICK_STEP_SAMPLE) {
-        int mouse_x = scene->mouse_x + (scene->surface->width / 2);
-        int mouse_y = scene->surface->height - scene->mouse_y;
+        int game_x = scene->mouse_x + (scene->surface->width / 2);
+        int game_y = scene->mouse_y;
+        int mouse_x = game_x;
+        int mouse_y = scene->surface->height - game_y;
+        int bounds_w = scene->surface->width;
+        int bounds_h = scene->surface->height;
+
+#ifdef SAILFISH
+        scene_gl_get_mouse_pixels(scene, game_x, game_y, &mouse_x, &mouse_y,
+                                  &bounds_w, &bounds_h);
+#endif
 
         float mouse_z = 0;
 
@@ -264,9 +353,29 @@ void scene_gl_render(Scene *scene) {
                      &mouse_z);
 
         vec3 position = {(float)mouse_x, (float)mouse_y, mouse_z};
-        vec4 bounds = {0, 0, scene->surface->width, scene->surface->height};
+        int vp_x = 0;
+        int vp_y = 0;
+        int vp_w = bounds_w;
+        int vp_h = bounds_h;
 
-        glm_unproject(position, scene->gl_projection_view, bounds,
+        mudclient_gl_get_viewport(scene->surface->mud, 0, 13, scene->width,
+                                  scene_height, &vp_x, &vp_y, &vp_w, &vp_h);
+
+        vec4 bounds = {vp_x, vp_y, vp_w, vp_h};
+
+        mat4 projection_view = GLM_MAT4_IDENTITY_INIT;
+#ifdef SAILFISH
+        {
+            mat4 rotation = GLM_MAT4_IDENTITY_INIT;
+            glm_rotate(rotation, glm_rad(-90.0f),
+                       (vec3){0.0f, 0.0f, 1.0f});
+            glm_mat4_mul(rotation, scene->gl_projection_view, projection_view);
+        }
+#else
+        glm_mat4_copy(scene->gl_projection_view, projection_view);
+#endif
+
+        glm_unproject(position, projection_view, bounds,
                       scene->gl_mouse_world);
 
         scene->gl_terrain_pick_step = GL_PICK_STEP_FINISHED;
@@ -276,6 +385,7 @@ void scene_gl_render(Scene *scene) {
 
         scene->gl_terrain_pick_y =
             FLOAT_TO_VERTEX(scene->gl_mouse_world[2]) / MAGIC_LOC;
+
     }
 #endif
 
@@ -333,8 +443,9 @@ void scene_gl_render(Scene *scene) {
 
     surface_reset_bounds(scene->surface);
 
-    glViewport(0, 0, scene->surface->mud->game_width,
-               scene->surface->mud->game_height);
+    mudclient_gl_viewport(scene->surface->mud, 0, 0,
+                          scene->surface->mud->game_width,
+                          scene->surface->mud->game_height);
 }
 
 /* draw translucent models (giant crystal) */
@@ -344,7 +455,8 @@ void scene_gl_render_transparent_models(Scene *scene) {
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
-    glViewport(0, 13, scene->width, scene_height);
+    mudclient_gl_viewport(scene->surface->mud, 0, 13, scene->width,
+                          scene_height);
 
     shader_use(&scene->game_model_shader);
 
@@ -359,8 +471,9 @@ void scene_gl_render_transparent_models(Scene *scene) {
         }
     }
 
-    glViewport(0, 0, scene->surface->mud->game_width,
-               scene->surface->mud->game_height);
+    mudclient_gl_viewport(scene->surface->mud, 0, 0,
+                          scene->surface->mud->game_width,
+                          scene->surface->mud->game_height);
 }
 
 #endif

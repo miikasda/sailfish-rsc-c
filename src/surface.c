@@ -13,6 +13,12 @@ int character_width[256] = {0};
 
 int32_t *surface_texture_pixels = NULL;
 
+#ifndef SDL12
+#ifdef SAILFISH
+static void surface_blit_rot270_scaled(SDL_Surface *src, SDL_Surface *dst);
+#endif
+#endif
+
 #ifdef RENDER_SW
 static int surface_blend_alpha(int background_colour, int colour, int alpha);
 
@@ -37,12 +43,6 @@ static void surface_plot_sprite32_alpha_scale(int32_t *restrict dest,
                                               int dest_offset, int width,
                                               int height, int l1, int i2,
                                               int j2, int y_inc, int alpha);
-
-#ifndef SDL12
-#ifdef SAILFISH
-static void surface_blit_rot270_scaled(SDL_Surface *src, SDL_Surface *dst);
-#endif
-#endif
 
 static void surface_plot_sprite32_scale(int32_t *restrict dest,
                                         int32_t *restrict src, int j, int k,

@@ -132,28 +132,68 @@ void mudclient_start_application(mudclient *mud, char *title) {
 #ifdef RENDER_GL
     windowflags |= SDL_WINDOW_OPENGL;
 
-#ifdef EMSCRIPTEN
+#ifdef SAILFISH
+    {
+        const char *candidates[] = {
+            "/usr/lib64/libGLESv2.so.2",
+            "/usr/libexec/droid-hybris/system/lib64/libGLESv2.so",
+            "/system/lib64/libGLESv2.so",
+            "libGLESv2.so.2",
+            "libGLESv2.so",
+        };
+        size_t i;
+        int loaded = 0;
+
+        for (i = 0; i < sizeof(candidates) / sizeof(candidates[0]); i++) {
+            if (SDL_GL_LoadLibrary(candidates[i]) == 0) {
+                loaded = 1;
+                break;
+            }
+        }
+
+        if (!loaded) {
+            fprintf(stderr,
+                    "SAILFISH: SDL_GL_LoadLibrary failed: %s\n",
+                    SDL_GetError());
+        }
+    }
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+#elif defined(EMSCRIPTEN)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 #elif defined(OPENGL15)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 #elif defined(OPENGL20)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 #else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
@@ -179,7 +219,9 @@ void mudclient_start_application(mudclient *mud, char *title) {
                                     SDL_WINDOW_FULLSCREEN_DESKTOP);
         }
 
+        #ifndef RENDER_GL
         mudclient_on_resize(mud);
+        #endif
     }
 
 #endif
@@ -208,6 +250,10 @@ void mudclient_start_application(mudclient *mud, char *title) {
         mud_error("SDL_GL_MakeCurrent(): %s\n", SDL_GetError());
         exit(1);
     }
+
+#ifdef SAILFISH
+    mudclient_on_resize(mud);
+#endif
 #endif
 }
 #endif

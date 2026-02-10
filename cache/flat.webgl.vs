@@ -8,8 +8,10 @@ out vec4 vertex_colour;
 out vec2 vertex_texture_position;
 out vec2 vertex_base_texture_position;
 
+uniform mat4 u_rotate;
+
 void main() {
-    gl_Position = vec4(position, 1.0);
+    gl_Position = u_rotate * vec4(position, 1.0);
 
     vertex_colour = colour;
     vertex_texture_position = texture_position;

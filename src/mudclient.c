@@ -1,6 +1,42 @@
 #include "mudclient.h"
 #include "sailfish-osk.h"
 
+#ifdef SAILFISH
+#include <EGL/egl.h>
+#include <dlfcn.h>
+
+#ifdef GLAD
+static void *sailfish_gl_handle = NULL;
+
+static void *sailfish_gles_loader(const char *name) {
+    if (sailfish_gl_handle == NULL) {
+        const char *paths[] = {
+            "/usr/lib64/libGLESv2.so.2",
+            "/usr/libexec/droid-hybris/system/lib64/libGLESv2.so",
+            "/system/lib64/libGLESv2.so",
+            "libGLESv2.so.2",
+            "libGLESv2.so",
+        };
+        for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
+            sailfish_gl_handle = dlopen(paths[i], RTLD_LAZY | RTLD_LOCAL);
+            if (sailfish_gl_handle != NULL) {
+                break;
+            }
+        }
+    }
+
+    void *sym = sailfish_gl_handle ? dlsym(sailfish_gl_handle, name) : NULL;
+    if (!sym) {
+        sym = (void *)eglGetProcAddress(name);
+    }
+    if (!sym) {
+        fprintf(stderr, "GLAD loader missing symbol: %s\n", name);
+    }
+    return sym;
+}
+#endif
+#endif
+
 #ifdef EMSCRIPTEN
 /* clang doesn't know what triple equals is, understandably */
 /* clang-format off */
@@ -121,6 +157,10 @@ void mudclient_new(mudclient *mud) {
     mud->camera_rotation_x_increment = 2;
     mud->camera_rotation_y_increment = 2;
     mud->last_plane_index = -1;
+#ifdef SAILFISH
+    mud->window_mouse_x = -1;
+    mud->window_mouse_y = -1;
+#endif
 
     mud->menu_items_size = 32;
     mud->menu_items = calloc(mud->menu_items_size, sizeof(struct MenuEntry));
@@ -181,7 +221,13 @@ void mudclient_resize(mudclient *mud) {
 #ifdef SDL12
     mud->screen = SDL_GetVideoSurface();
 #else
-    mud->screen = SDL_GetWindowSurface(mud->window);
+    SDL_Window *window = mud->window;
+#ifdef RENDER_GL
+    if (window == NULL) {
+        window = mud->gl_window;
+    }
+#endif
+    mud->screen = window ? SDL_GetWindowSurface(window) : NULL;
 
 #ifdef RENDER_SW
     if (mudclient_is_ui_scaled(mud)) {
@@ -323,7 +369,13 @@ void mudclient_resize(mudclient *mud) {
     }
 
 #ifdef RENDER_GL
-    glViewport(0, 0, mud->game_width, mud->game_height);
+    #ifdef GLAD
+    if (glad_glViewport) {
+        mudclient_gl_viewport(mud, 0, 0, mud->game_width, mud->game_height);
+    }
+    #else
+    mudclient_gl_viewport(mud, 0, 0, mud->game_width, mud->game_height);
+    #endif
 #endif
 #endif
 }
@@ -332,17 +384,21 @@ static void mudclient_start_application_common(struct mudclient *mud) {
 #ifdef RENDER_GL
 
 #ifdef GLAD
-#if defined(SDL_OPENGL) || defined(SDL_WINDOW_OPENGL)
+    #ifdef SAILFISH
+    if (gladLoadGLES2Loader((GLADloadproc)sailfish_gles_loader) == 0) {
+        mud_error("Error loading GLES library through GLAD\n");
+        exit(1);
+    }
+    if (!GLAD_GL_ES_VERSION_3_0) {
+        mud_error("GLES 3.0 context required for GL renderer on Sailfish\n");
+        exit(1);
+    }
+    #else
     if (gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) == 0) {
         mud_error("Error loading GL library through GLAD/SDL\n");
         exit(1);
     }
-#else
-    if (gladLoadGL() == 0) {
-        mud_error("Error loading GL library through GLAD\n");
-        exit(1);
-    }
-#endif
+    #endif
     printf("INFO: Loaded OpenGL version %d.%d\n", GLVersion.major,
            GLVersion.minor);
 #elif !defined(ANDROID)
@@ -356,7 +412,7 @@ static void mudclient_start_application_common(struct mudclient *mud) {
     }
 #endif
 
-    glViewport(0, 0, mud->game_width, mud->game_height);
+    mudclient_gl_viewport(mud, 0, 0, mud->game_width, mud->game_height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     /* when two vertices have the same depth, the last one gets drawn rather
@@ -2559,6 +2615,66 @@ void mudclient_update_fov(mudclient *mud) {
 }
 #endif
 
+#ifdef RENDER_GL
+void mudclient_gl_get_viewport(mudclient *mud, int x, int y, int width,
+                               int height, int *out_x, int *out_y, int *out_w,
+                               int *out_h) {
+    SDL_Window *window = mud->gl_window ? mud->gl_window : mud->window;
+
+    *out_x = x;
+    *out_y = y;
+    *out_w = width;
+    *out_h = height;
+
+    if (window == NULL) {
+        return;
+    }
+
+    int window_width = 0;
+    int window_height = 0;
+    SDL_GetWindowSize(window, &window_width, &window_height);
+
+#ifdef SAILFISH
+    if (window_width > 0 && window_height > 0 && mud->game_width > 0 &&
+        mud->game_height > 0) {
+        float scale_x = window_width / (float)mud->game_width;
+        float scale_y = window_height / (float)mud->game_height;
+
+        *out_x = (int)roundf(x * scale_x);
+        *out_y = (int)roundf(y * scale_y);
+        *out_w = (int)roundf(width * scale_x);
+        *out_h = (int)roundf(height * scale_y);
+    }
+#endif
+}
+
+void mudclient_gl_viewport(mudclient *mud, int x, int y, int width,
+                           int height) {
+    int vp_x = x;
+    int vp_y = y;
+    int vp_w = width;
+    int vp_h = height;
+
+    mudclient_gl_get_viewport(mud, x, y, width, height, &vp_x, &vp_y, &vp_w,
+                              &vp_h);
+    glViewport(vp_x, vp_y, vp_w, vp_h);
+}
+#endif
+
+#ifdef RENDER_GL
+void mudclient_gl_scissor(mudclient *mud, int x, int y, int width,
+                          int height) {
+    int vp_x = x;
+    int vp_y = y;
+    int vp_w = width;
+    int vp_h = height;
+
+    mudclient_gl_get_viewport(mud, x, y, width, height, &vp_x, &vp_y, &vp_w,
+                              &vp_h);
+    glScissor(vp_x, vp_y, vp_w, vp_h);
+}
+#endif
+
 void mudclient_start_game(mudclient *mud) {
     mudclient_load_game_config(mud);
 
@@ -3598,7 +3714,7 @@ void mudclient_handle_inputs(mudclient *mud) {
             mud->gl_is_walking = 0;
             mud->scene->gl_terrain_pick_step = GL_PICK_STEP_NONE;
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
             int x = mud->world->local_x[mud->scene->gl_pick_face_tag];
             int y = mud->world->local_y[mud->scene->gl_pick_face_tag];
 #else

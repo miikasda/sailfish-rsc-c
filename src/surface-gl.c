@@ -25,7 +25,7 @@ void surface_gl_new(Surface *surface, int width, int height, int limit,
 #ifdef RENDER_GL
     surface_gl_create_framebuffer(surface);
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
     shader_new(&surface->gl_flat_shader, "./cache/flat.webgl.vs",
                "./cache/flat.webgl.fs");
 #elif defined(OPENGL15) || defined(OPENGL20)
@@ -38,6 +38,14 @@ void surface_gl_new(Surface *surface, int width, int height, int limit,
 #endif
 
     shader_use(&surface->gl_flat_shader);
+
+    {
+        mat4 rotation = GLM_MAT4_IDENTITY_INIT;
+#ifdef SAILFISH
+        glm_rotate(rotation, glm_rad(-90.0f), (vec3){0.0f, 0.0f, 1.0f});
+#endif
+        shader_set_mat4(&surface->gl_flat_shader, "u_rotate", rotation);
+    }
 
     shader_set_int(&surface->gl_flat_shader, "sprite_texture", 0);
     shader_set_int(&surface->gl_flat_shader, "sprite_base_texture", 1);
@@ -858,8 +866,9 @@ void surface_gl_draw(Surface *surface, GL_DEPTH_MODE depth_mode) {
         int bounds_width = max_x - min_x;
         int bounds_height = max_y - min_y;
 
-        glScissor(min_x, surface->mud->game_height - min_y - bounds_height,
-                  bounds_width, bounds_height);
+        mudclient_gl_scissor(surface->mud, min_x,
+                             surface->mud->game_height - min_y - bounds_height,
+                             bounds_width, bounds_height);
 
         GLuint texture = context->texture;
 

@@ -77,6 +77,10 @@ ifeq ($(LEGACY_GL), 1)
 CFLAGS += -DOPENGL20 #-DOPENGL15
 endif
 
+ifeq ($(SAILFISH), 1)
+LDFLAGS += -lEGL
+endif
+
 # required for loading texture and sprite sheets
 ifeq ($(SDL2), 1)
 CFLAGS += $(shell pkg-config --cflags SDL2_image)
@@ -90,6 +94,7 @@ endif
 ifeq ($(GLAD), 1)
 CFLAGS += -DGLAD -Iglad -Iglad/glad
 SRC += glad/glad.c
+LDFLAGS += -ldl
 else
 CFLAGS += $(shell pkg-config --cflags glew)
 LDFLAGS += $(shell pkg-config --libs glew)

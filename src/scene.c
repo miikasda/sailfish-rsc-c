@@ -12,6 +12,49 @@ static void scene_prepare_texture(Scene *scene, int id);
 static void scene_set_texture_pixels(Scene *scene, int id);
 static void scene_initialise_polygon_2d(Scene *scene, int polygon_index);
 
+#ifdef RENDER_GL
+static SDL_Surface *scene_load_surface(const char *file) {
+    SDL_Surface *surface = IMG_Load(file);
+
+    if (!surface) {
+        const char *file_name = NULL;
+
+        if (strncmp(file, "./cache/", 8) == 0) {
+            file_name = file + 8;
+        } else if (strncmp(file, "cache/", 6) == 0) {
+            file_name = file + 6;
+        }
+
+        if (file_name) {
+            char prefixed_file[PATH_MAX];
+            const char *xdg_home = getenv("XDG_DATA_HOME");
+
+            if (xdg_home == NULL) {
+                const char *home = getenv("HOME");
+                if (home == NULL) {
+                    home = "";
+                }
+                snprintf(prefixed_file, sizeof(prefixed_file),
+                         "%s/.local/share/rsc-c/%s", home, file_name);
+            } else {
+                snprintf(prefixed_file, sizeof(prefixed_file), "%s/rsc-c/%s",
+                         xdg_home, file_name);
+            }
+
+            surface = IMG_Load(prefixed_file);
+
+            if (!surface) {
+                snprintf(prefixed_file, sizeof(prefixed_file), "%s/%s",
+                         MUD_DATADIR, file_name);
+                surface = IMG_Load(prefixed_file);
+            }
+        }
+    }
+
+    return surface;
+}
+#endif
+
 #ifdef RENDER_SW
 static void scene_texture128_scanline(int32_t *restrict raster,
                                       int32_t *restrict texture, int k, int l,
@@ -186,12 +229,13 @@ void scene_new(Scene *scene, Surface *surface, int model_count,
 #endif
 
 #ifdef RENDER_GL
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
     shader_new(&scene->game_model_shader, "./cache/game-model.webgl.vs",
                "./cache/game-model.webgl.fs");
-
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
     shader_new(&scene->game_model_pick_shader, "./cache/pick.webgl.vs",
                "./cache/pick.webgl.fs");
+#endif
 #elif defined(OPENGL15) || defined(OPENGL20)
     shader_new(&scene->game_model_shader, "./cache/game-model.gl2.vs",
                "./cache/game-model.gl2.fs");
@@ -226,6 +270,14 @@ void scene_new(Scene *scene, Surface *surface, int model_count,
 
     shader_use(&scene->game_model_shader);
 
+    {
+        mat4 rotation = GLM_MAT4_IDENTITY_INIT;
+#ifdef SAILFISH
+        glm_rotate(rotation, glm_rad(-90.0f), (vec3){0.0f, 0.0f, 1.0f});
+#endif
+        shader_set_mat4(&scene->game_model_shader, "u_rotate", rotation);
+    }
+
     shader_set_int(&scene->game_model_shader, "model_textures", 0);
 
     shader_set_float_array(&scene->game_model_shader, "light_gradient",
@@ -243,7 +295,8 @@ void scene_new(Scene *scene, Surface *surface, int model_count,
     gl_load_texture(&scene->gl_model_texture,
                     "./cache/textures/model_textures.png");
 
-    scene->gl_model_surface = IMG_Load("./cache/textures/model_textures.png");
+    scene->gl_model_surface =
+        scene_load_surface("./cache/textures/model_textures.png");
 #endif
 #elif defined(RENDER_3DS_GL)
     scene->_3ds_gl_model_shader_dvlb =

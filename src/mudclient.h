@@ -565,6 +565,10 @@ struct mudclient {
     int mouse_action_timeout;
     int mouse_x;
     int mouse_y;
+#ifdef SAILFISH
+    int window_mouse_x;
+    int window_mouse_y;
+#endif
     int mouse_button_down;
     int last_mouse_button_down;
     int mouse_button_click;
@@ -1169,6 +1173,15 @@ void mudclient_change_password(mudclient *mud, char *old_password,
                                char *new_password);
 #if defined(RENDER_GL) || defined(RENDER_3DS_GL)
 void mudclient_update_fov(mudclient *mud);
+#ifdef RENDER_GL
+void mudclient_gl_viewport(mudclient *mud, int x, int y, int width,
+                           int height);
+void mudclient_gl_get_viewport(mudclient *mud, int x, int y, int width,
+                               int height, int *out_x, int *out_y, int *out_w,
+                               int *out_h);
+void mudclient_gl_scissor(mudclient *mud, int x, int y, int width,
+                          int height);
+#endif
 #endif
 void mudclient_start_game(mudclient *mud);
 void mudclient_draw(mudclient *mud);

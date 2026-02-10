@@ -1872,7 +1872,7 @@ int game_model_gl_buffer_models(gl_vertex_buffer ***vertex_buffers,
     return total_buffers;
 }
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
 void game_model_gl_create_pick_buffer(gl_vertex_buffer *pick_buffer,
                                       int vbo_length, int ebo_length) {
     vertex_buffer_gl_new(pick_buffer, sizeof(gl_pick_vertex), vbo_length,

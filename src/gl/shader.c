@@ -6,6 +6,41 @@ char *buffer_file(char *path) {
     FILE *file = fopen(path, "r");
 
     if (!file) {
+        const char *file_name = NULL;
+
+        if (strncmp(path, "./cache/", 8) == 0) {
+            file_name = path + 8;
+        } else if (strncmp(path, "cache/", 6) == 0) {
+            file_name = path + 6;
+        }
+
+        if (file_name) {
+            char prefixed_file[PATH_MAX];
+            const char *xdg_home = getenv("XDG_DATA_HOME");
+
+            if (xdg_home == NULL) {
+                const char *home = getenv("HOME");
+                if (home == NULL) {
+                    home = "";
+                }
+                snprintf(prefixed_file, sizeof(prefixed_file),
+                         "%s/.local/share/rsc-c/%s", home, file_name);
+            } else {
+                snprintf(prefixed_file, sizeof(prefixed_file), "%s/rsc-c/%s",
+                         xdg_home, file_name);
+            }
+
+            file = fopen(prefixed_file, "r");
+
+            if (!file) {
+                snprintf(prefixed_file, sizeof(prefixed_file), "%s/%s",
+                         MUD_DATADIR, file_name);
+                file = fopen(prefixed_file, "r");
+            }
+        }
+    }
+
+    if (!file) {
         mud_error("unable to open file: %s\n", path);
         exit(1);
     }

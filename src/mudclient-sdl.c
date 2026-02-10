@@ -68,6 +68,15 @@ static void sailfish_rotate_touch(mudclient *mud, int window_width,
     *touch_x = rotated_x;
     *touch_y = rotated_y;
 }
+
+static SDL_Window *sailfish_get_window(mudclient *mud) {
+#ifdef RENDER_GL
+    if (mud->gl_window != NULL) {
+        return mud->gl_window;
+    }
+#endif
+    return mud->window;
+}
 #endif
 
 void mudclient_poll_events(mudclient *mud) {
@@ -124,9 +133,9 @@ void mudclient_poll_events(mudclient *mud) {
                 int window_height = mud->game_height;
 
 #ifdef SDL2
-                if (mud->window != NULL) {
-                    SDL_GetWindowSize(mud->window, &window_width,
-                                      &window_height);
+                SDL_Window *window = sailfish_get_window(mud);
+                if (window != NULL) {
+                    SDL_GetWindowSize(window, &window_width, &window_height);
                 }
 #endif
 
@@ -135,6 +144,8 @@ void mudclient_poll_events(mudclient *mud) {
 
                 int raw_x = touch_x;
                 int raw_y = touch_y;
+                mud->window_mouse_x = raw_x;
+                mud->window_mouse_y = raw_y;
                 sailfish_rotate_touch(mud, window_width, window_height,
                                       &touch_x, &touch_y);
 #ifdef SAILFISH
@@ -160,9 +171,9 @@ void mudclient_poll_events(mudclient *mud) {
                 int window_height = mud->game_height;
 
 #ifdef SDL2
-                if (mud->window != NULL) {
-                    SDL_GetWindowSize(mud->window, &window_width,
-                                      &window_height);
+                SDL_Window *window = sailfish_get_window(mud);
+                if (window != NULL) {
+                    SDL_GetWindowSize(window, &window_width, &window_height);
                 }
 #endif
 
@@ -171,6 +182,8 @@ void mudclient_poll_events(mudclient *mud) {
 
                 int raw_x = touch_x;
                 int raw_y = touch_y;
+                mud->window_mouse_x = raw_x;
+                mud->window_mouse_y = raw_y;
                 sailfish_rotate_touch(mud, window_width, window_height,
                                       &touch_x, &touch_y);
 #ifdef SAILFISH
@@ -198,9 +211,9 @@ void mudclient_poll_events(mudclient *mud) {
                 int window_height = mud->game_height;
 
 #ifdef SDL2
-                if (mud->window != NULL) {
-                    SDL_GetWindowSize(mud->window, &window_width,
-                                      &window_height);
+                SDL_Window *window = sailfish_get_window(mud);
+                if (window != NULL) {
+                    SDL_GetWindowSize(window, &window_width, &window_height);
                 }
 #endif
 
@@ -209,6 +222,8 @@ void mudclient_poll_events(mudclient *mud) {
 
                 int raw_x = touch_x;
                 int raw_y = touch_y;
+                mud->window_mouse_x = raw_x;
+                mud->window_mouse_y = raw_y;
                 sailfish_rotate_touch(mud, window_width, window_height,
                                       &touch_x, &touch_y);
 #ifdef SAILFISH
@@ -256,8 +271,13 @@ void mudclient_poll_events(mudclient *mud) {
             int window_height = mud->game_height;
 
 #ifdef SDL2
-            if (mud->window != NULL) {
-                SDL_GetWindowSize(mud->window, &window_width, &window_height);
+#ifdef SAILFISH
+            SDL_Window *window = sailfish_get_window(mud);
+#else
+            SDL_Window *window = mud->window;
+#endif
+            if (window != NULL) {
+                SDL_GetWindowSize(window, &window_width, &window_height);
             }
 #endif
 
@@ -265,6 +285,8 @@ void mudclient_poll_events(mudclient *mud) {
             int touch_y = event.tfinger.y * window_height;
 
 #ifdef SAILFISH
+            mud->window_mouse_x = touch_x;
+            mud->window_mouse_y = touch_y;
             sailfish_rotate_touch(mud, window_width, window_height, &touch_x,
                                   &touch_y);
 #endif
@@ -340,8 +362,13 @@ void mudclient_poll_events(mudclient *mud) {
             int window_height = mud->game_height;
 
 #ifdef SDL2
-            if (mud->window != NULL) {
-                SDL_GetWindowSize(mud->window, &window_width, &window_height);
+#ifdef SAILFISH
+            SDL_Window *window = sailfish_get_window(mud);
+#else
+            SDL_Window *window = mud->window;
+#endif
+            if (window != NULL) {
+                SDL_GetWindowSize(window, &window_width, &window_height);
             }
 #endif
 
@@ -349,6 +376,8 @@ void mudclient_poll_events(mudclient *mud) {
             int touch_y = event.tfinger.y * window_height;
 
 #ifdef SAILFISH
+            mud->window_mouse_x = touch_x;
+            mud->window_mouse_y = touch_y;
             sailfish_rotate_touch(mud, window_width, window_height, &touch_x,
                                   &touch_y);
 #endif
@@ -401,8 +430,13 @@ void mudclient_poll_events(mudclient *mud) {
             int window_height = mud->game_height;
 
 #ifdef SDL2
-            if (mud->window != NULL) {
-                SDL_GetWindowSize(mud->window, &window_width, &window_height);
+#ifdef SAILFISH
+            SDL_Window *window = sailfish_get_window(mud);
+#else
+            SDL_Window *window = mud->window;
+#endif
+            if (window != NULL) {
+                SDL_GetWindowSize(window, &window_width, &window_height);
             }
 #endif
 
@@ -410,6 +444,8 @@ void mudclient_poll_events(mudclient *mud) {
             int touch_y = event.tfinger.y * window_height;
 
 #ifdef SAILFISH
+            mud->window_mouse_x = touch_x;
+            mud->window_mouse_y = touch_y;
             sailfish_rotate_touch(mud, window_width, window_height, &touch_x,
                                   &touch_y);
 #endif

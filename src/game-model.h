@@ -44,7 +44,7 @@ typedef struct gl_face_fill {
 #include <SDL_opengl.h>
 #endif
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
 typedef struct gl_pick_vertex {
     float x, y, z;
     float r, g;
@@ -162,7 +162,7 @@ struct GameModel {
 
     gl_vertex_buffer *gl_buffer;
 #endif
-#if defined(RENDER_GL) && defined(EMSCRIPTEN)
+#if defined(RENDER_GL) && (defined(EMSCRIPTEN) || defined(SAILFISH))
     int gl_pick_vbo_offset;
     int gl_pick_ebo_offset;
 #endif

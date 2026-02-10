@@ -921,6 +921,41 @@ void gl_load_texture(GLuint *texture_id, char *file) {
     SDL_Surface *texture_image = IMG_Load(file);
 
     if (!texture_image) {
+        const char *file_name = NULL;
+
+        if (strncmp(file, "./cache/", 8) == 0) {
+            file_name = file + 8;
+        } else if (strncmp(file, "cache/", 6) == 0) {
+            file_name = file + 6;
+        }
+
+        if (file_name) {
+            char prefixed_file[PATH_MAX];
+            const char *xdg_home = getenv("XDG_DATA_HOME");
+
+            if (xdg_home == NULL) {
+                const char *home = getenv("HOME");
+                if (home == NULL) {
+                    home = "";
+                }
+                snprintf(prefixed_file, sizeof(prefixed_file),
+                         "%s/.local/share/rsc-c/%s", home, file_name);
+            } else {
+                snprintf(prefixed_file, sizeof(prefixed_file), "%s/rsc-c/%s",
+                         xdg_home, file_name);
+            }
+
+            texture_image = IMG_Load(prefixed_file);
+
+            if (!texture_image) {
+                snprintf(prefixed_file, sizeof(prefixed_file), "%s/%s",
+                         MUD_DATADIR, file_name);
+                texture_image = IMG_Load(prefixed_file);
+            }
+        }
+    }
+
+    if (!texture_image) {
         mud_error("unable to load %s texture\n%s\n", file, IMG_GetError());
 
         exit(1);

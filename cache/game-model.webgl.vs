@@ -23,6 +23,7 @@ uniform int fog_distance;
 
 uniform mat4 model;
 uniform mat4 projection_view_model;
+uniform mat4 u_rotate;
 
 uniform bool unlit;
 uniform float light_ambience;
@@ -32,7 +33,7 @@ uniform float light_diffuse;
 uniform bool cull_front;
 
 void main() {
-    gl_Position = projection_view_model * vec4(position, 1.0);
+    gl_Position = u_rotate * (projection_view_model * vec4(position, 1.0));
 
     float face_intensity = lighting.x;
     float vertex_intensity = lighting.y;

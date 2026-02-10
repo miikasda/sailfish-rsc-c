@@ -144,6 +144,11 @@ extern int32_t *surface_texture_pixels;
 
 void init_surface_global(void);
 
+#ifdef RENDER_GL
+void surface_gl_new(Surface *surface, int width, int height, int limit,
+                    mudclient *mud);
+#endif
+
 struct Surface {
     int limit;
     int width;

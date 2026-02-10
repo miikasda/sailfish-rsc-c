@@ -40,7 +40,9 @@ if [ ! -f Makefile ]; then
 fi
 # << build pre
 
-make %{?_smp_mflags}
+make clean
+
+make %{?_smp_mflags} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1
 
 # >> build post
 # << build post
@@ -56,7 +58,7 @@ if [ ! -f Makefile ]; then
 fi
 # << install pre
 
-make install DESTDIR=%{buildroot}
+make install DESTDIR=%{buildroot} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1
 
 # Replace generic desktop/icon installs with Sailfish paths.
 rm -f %{buildroot}%{_datadir}/applications/*.desktop

@@ -217,7 +217,7 @@ struct Scene {
 #ifdef RENDER_GL
     Shader game_model_shader;
 
-#ifdef EMSCRIPTEN
+#if defined(EMSCRIPTEN) || defined(SAILFISH)
     Shader game_model_pick_shader;
 
     gl_vertex_buffer gl_pick_buffer;
