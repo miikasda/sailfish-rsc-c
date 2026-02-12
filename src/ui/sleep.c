@@ -4,7 +4,12 @@ void mudclient_draw_sleep(mudclient *mud) {
     int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
                      mud->surface->height < MUD_VANILLA_HEIGHT;
 
+#ifdef RENDER_GL
+    surface_draw_box(mud->surface, 0, 0, mud->surface->width,
+                     mud->surface->height, BLACK);
+#else
     surface_fade_to_black(mud->surface);
+#endif
 
     int zzz_width = 80 + (mud->surface->width / 2 - MUD_VANILLA_WIDTH / 2);
 
