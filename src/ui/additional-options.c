@@ -1,4 +1,5 @@
 #include "./additional-options.h"
+#include <stdlib.h>
 
 #define OPTION_HORIZ_GAP (18)
 
@@ -606,6 +607,34 @@ void mudclient_create_options_panel(mudclient *mud) {
     mud->bank_option_types[control] = ADDITIONAL_OPTIONS_CHECKBOX;
 }
 
+void mudclient_rebuild_options_panels(mudclient *mud) {
+    if (mud->panel_game_options != NULL) {
+        panel_destroy(mud->panel_game_options);
+        free(mud->panel_game_options);
+        mud->panel_game_options = NULL;
+    }
+
+    if (mud->panel_control_options != NULL) {
+        panel_destroy(mud->panel_control_options);
+        free(mud->panel_control_options);
+        mud->panel_control_options = NULL;
+    }
+
+    if (mud->panel_ui_options != NULL) {
+        panel_destroy(mud->panel_ui_options);
+        free(mud->panel_ui_options);
+        mud->panel_ui_options = NULL;
+    }
+
+    if (mud->panel_bank_options != NULL) {
+        panel_destroy(mud->panel_bank_options);
+        free(mud->panel_bank_options);
+        mud->panel_bank_options = NULL;
+    }
+
+    mudclient_create_options_panel(mud);
+}
+
 Panel *mudclient_get_active_option_panel(mudclient *mud) {
     Panel *panel = NULL;
 
@@ -848,6 +877,8 @@ void mudclient_handle_additional_options_input(mudclient *mud) {
 #else
                     mudclient_on_resize(mud);
 #endif
+                    mudclient_rebuild_options_panels(mud);
+                    mudclient_sync_options_panels(mud);
                 }
 #endif
             }

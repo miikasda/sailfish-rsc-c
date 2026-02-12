@@ -380,6 +380,48 @@ void mudclient_resize(mudclient *mud) {
 #endif
 }
 
+static void mudclient_update_login_panel_offsets(mudclient *mud) {
+    if (mud == NULL || mud->surface == NULL) {
+        return;
+    }
+
+    int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
+                     mud->surface->height < MUD_VANILLA_HEIGHT;
+
+    int dynamic_offset_x =
+        (mud->surface->width / 2) -
+        (is_compact ? MUD_MIN_WIDTH : MUD_VANILLA_WIDTH) / 2;
+
+    int dynamic_offset_y =
+        (mud->surface->height / 2) -
+        (is_compact ? MUD_MIN_HEIGHT : MUD_VANILLA_HEIGHT) / 2;
+
+    if (mud->panel_login_welcome != NULL) {
+        mud->panel_login_welcome->offset_x = dynamic_offset_x;
+        mud->panel_login_welcome->offset_y = dynamic_offset_y;
+    }
+
+    if (mud->panel_login_new_user != NULL) {
+        mud->panel_login_new_user->offset_x = dynamic_offset_x;
+        mud->panel_login_new_user->offset_y = dynamic_offset_y;
+    }
+
+    if (mud->panel_login_existing_user != NULL) {
+        mud->panel_login_existing_user->offset_x = dynamic_offset_x;
+        mud->panel_login_existing_user->offset_y = dynamic_offset_y;
+    }
+
+    if (mud->panel_login_worldlist != NULL) {
+        mud->panel_login_worldlist->offset_x = dynamic_offset_x;
+        mud->panel_login_worldlist->offset_y = dynamic_offset_y;
+    }
+
+    if (mud->panel_appearance != NULL) {
+        mud->panel_appearance->offset_x = dynamic_offset_x;
+        mud->panel_appearance->offset_y = dynamic_offset_y;
+    }
+}
+
 static void mudclient_start_application_common(struct mudclient *mud) {
 #ifdef RENDER_GL
 
@@ -434,6 +476,13 @@ static void mudclient_start_application_common(struct mudclient *mud) {
 
     surface_new(mud->surface, mud->game_width, mud->game_height, SPRITE_LIMIT,
                 mud);
+
+    /* ensure UI scale is applied before any panels are created */
+    if (mudclient_is_ui_scaled(mud)) {
+        mud->surface->width = mud->game_width / 2;
+        mud->surface->height = mud->game_height / 2;
+        surface_reset_bounds(mud->surface);
+    }
 
     surface_set_bounds(mud->surface, 0, 0, mud->game_width, mud->game_height);
 
@@ -2974,6 +3023,7 @@ void mudclient_start_game(mudclient *mud) {
     mudclient_create_login_panels(mud);
     mudclient_create_appearance_panel(mud);
     mudclient_create_options_panel(mud);
+    mudclient_update_login_panel_offsets(mud);
     mudclient_reset_login_screen(mud);
 
     worldlist_new(mud);

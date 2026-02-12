@@ -30,5 +30,6 @@ void mudclient_sync_options_panel(Panel *panel, void **options,
 void mudclient_sync_options_panels(mudclient *mud);
 void mudclient_draw_additional_options(mudclient *mud);
 void mudclient_handle_additional_options_input(mudclient *mud);
+void mudclient_rebuild_options_panels(mudclient *mud);
 
 #endif
