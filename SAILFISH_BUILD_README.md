@@ -44,6 +44,12 @@ cd ~/sailfish_projects/rsc-c
 sfdk build
 ```
 
+Optional full rebuild:
+
+```bash
+CLEAN_BUILD=1 sfdk build
+```
+
 The RPM appears under:
 
 ```

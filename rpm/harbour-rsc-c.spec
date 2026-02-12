@@ -40,7 +40,9 @@ if [ ! -f Makefile ]; then
 fi
 # << build pre
 
-make clean
+if [ "${CLEAN_BUILD:-0}" = "1" ]; then
+    make clean
+fi
 
 make %{?_smp_mflags} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1
 
