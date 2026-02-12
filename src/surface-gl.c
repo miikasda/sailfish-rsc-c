@@ -905,35 +905,94 @@ void surface_gl_draw(Surface *surface, GL_DEPTH_MODE depth_mode) {
 
 void surface_gl_raster_to_sprite(Surface *surface, int sprite_id, int x,
                                  int y, int width, int height) {
-    (void)x;
-    (void)y;
+    int read_width = surface->mud->game_width;
+    int read_height = surface->mud->game_height;
+    uint32_t *screen_pixels = surface->gl_screen_pixels;
+#ifdef SAILFISH
+    SDL_Window *window =
+        surface->mud->gl_window ? surface->mud->gl_window : surface->mud->window;
+    int window_width = 0;
+    int window_height = 0;
 
-    glReadPixels(0, 0, surface->mud->game_width, surface->mud->game_height,
-                 GL_RGBA, GL_UNSIGNED_BYTE, surface->gl_screen_pixels);
+    if (window != NULL) {
+        SDL_GetWindowSize(window, &window_width, &window_height);
+    }
+
+    if (window_width > 0 && window_height > 0) {
+        read_width = window_width;
+        read_height = window_height;
+        screen_pixels =
+            calloc((size_t)read_width * (size_t)read_height, sizeof(uint32_t));
+    }
+#endif
+
+    glReadPixels(0, 0, read_width, read_height, GL_RGBA, GL_UNSIGNED_BYTE,
+                 screen_pixels);
 
     int offset_y = (sprite_id - surface->mud->sprite_logo) * height;
     int offset_x = MINIMAP_SPRITE_WIDTH;
 
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
-            uint32_t colour =
-                surface
-                    ->gl_screen_pixels[x + (surface->mud->game_height - y - 1) *
-                                               surface->mud->game_width];
+    for (int xx = 0; xx < width; xx++) {
+        int logical_x = x + xx;
 
-            int texture_offset = ((offset_y + y) * 1024 + (offset_x + x)) * 3;
+        for (int yy = 0; yy < height; yy++) {
+            int logical_y = y + yy;
+            int src_x = logical_x;
+            int src_y = logical_y;
+
+#ifdef SAILFISH
+            if (read_width != surface->mud->game_width ||
+                read_height != surface->mud->game_height) {
+                float scale_w = read_width / (float)surface->mud->game_height;
+                float scale_h = read_height / (float)surface->mud->game_width;
+                float scale = scale_w < scale_h ? scale_w : scale_h;
+
+                int scaled_w = (int)(surface->mud->game_height * scale);
+                int scaled_h = (int)(surface->mud->game_width * scale);
+
+                int x_offset = (read_width - scaled_w) / 2;
+                int y_offset = (read_height - scaled_h) / 2;
+
+                int local_y =
+                    (int)((logical_x * (float)scaled_h) /
+                          surface->mud->game_width);
+                int local_x =
+                    (scaled_w - 1) -
+                    (int)((logical_y * (float)scaled_w) /
+                          surface->mud->game_height);
+
+                src_x = x_offset + local_x;
+                src_y = y_offset + local_y;
+            }
+#endif
+
+            if (src_x < 0 || src_x >= read_width || src_y < 0 ||
+                src_y >= read_height) {
+                continue;
+            }
+
+            int src_index = src_x + (read_height - src_y - 1) * read_width;
+
+            uint32_t colour = screen_pixels[src_index];
+
+            int texture_offset =
+                ((offset_y + yy) * 1024 + (offset_x + xx)) * 3;
 
             surface->gl_dynamic_texture_buffer[texture_offset + 2] =
                 (colour >> 16) & 255;
-
             surface->gl_dynamic_texture_buffer[texture_offset + 1] =
                 (colour >> 8) & 255;
-
             surface->gl_dynamic_texture_buffer[texture_offset] = colour & 255;
         }
     }
 
     surface_gl_update_dynamic_texture(surface);
+
+#ifdef SAILFISH
+    if (screen_pixels != surface->gl_screen_pixels) {
+        free(screen_pixels);
+    }
+#endif
 }
 
 void surface_gl_create_framebuffer(Surface *surface) {

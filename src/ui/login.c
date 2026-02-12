@@ -1,8 +1,65 @@
 #include "login.h"
 
+static int login_is_compact(mudclient *mud) {
+    int width = mud->surface->width;
+    int height = mud->surface->height;
+
+#if defined(RENDER_GL) || defined(RENDER_3DS_GL)
+    if (mudclient_is_ui_scaled(mud)) {
+        width = mud->game_width;
+        height = mud->game_height;
+    }
+#endif
+
+    return width < MUD_VANILLA_WIDTH || height < MUD_VANILLA_HEIGHT;
+}
+
+static void login_capture_background(mudclient *mud, int sprite_id,
+                                     int login_background_width,
+                                     int login_background_height) {
+    int capture_x = 0;
+    int capture_y = 0;
+    int capture_width = login_background_width;
+    int capture_height = login_background_height;
+
+#if defined(RENDER_GL) || defined(RENDER_3DS_GL)
+    int scale = mudclient_is_ui_scaled(mud) ? 2 : 1;
+    int max_width = 1024 - MINIMAP_SPRITE_WIDTH;
+    int max_height = 1024 / 3;
+
+    capture_width *= scale;
+    capture_height *= scale;
+
+    if (capture_width > mud->game_width) {
+        capture_width = mud->game_width;
+    }
+    if (capture_height > mud->game_height) {
+        capture_height = mud->game_height;
+    }
+    if (capture_width > max_width) {
+        capture_width = max_width;
+    }
+    if (capture_height > max_height) {
+        capture_height = max_height;
+    }
+    if (capture_width < 1) {
+        capture_width = 1;
+    }
+    if (capture_height < 1) {
+        capture_height = 1;
+    }
+
+    if (mud->game_width > capture_width) {
+        capture_x = (mud->game_width - capture_width) / 2;
+    }
+#endif
+
+    surface_screen_raster_to_sprite(mud->surface, sprite_id, capture_x,
+                                    capture_y, capture_width, capture_height);
+}
+
 void mudclient_create_login_panels(mudclient *mud) {
-    int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
-                     mud->surface->height < MUD_VANILLA_HEIGHT;
+    int is_compact = login_is_compact(mud);
 
     int is_touch = mudclient_is_touch(mud);
 
@@ -420,8 +477,7 @@ void mudclient_create_login_panels(mudclient *mud) {
 }
 
 void mudclient_show_login_screen_status(mudclient *mud, char *s, char *s1) {
-    int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
-                     mud->surface->height < MUD_VANILLA_HEIGHT;
+    int is_compact = login_is_compact(mud);
 
     if (mud->login_screen == LOGIN_STAGE_NEW) {
         sprintf(login_screen_status, "%s %s", s, s1);
@@ -473,9 +529,9 @@ void mudclient_reset_login_screen(mudclient *mud) {
 }
 
 void mudclient_render_login_scene_sprites(mudclient *mud) {
-    int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
-                     mud->surface->height < MUD_VANILLA_HEIGHT;
+    int is_compact = login_is_compact(mud);
 
+    int login_background_width = is_compact ? MUD_MIN_WIDTH : MUD_VANILLA_WIDTH;
     int login_background_height = is_compact ? 125 : 200;
 
 #if defined(RENDER_GL) || defined(RENDER_3DS_GL)
@@ -571,9 +627,8 @@ void mudclient_render_login_scene_sprites(mudclient *mud) {
     delay_ticks(LOGIN_RENDER_DELAY);
 #endif
 
-    surface_screen_raster_to_sprite(mud->surface, mud->sprite_logo, 0, 0,
-                                    mud->surface->width,
-                                    login_background_height);
+    login_capture_background(mud, mud->sprite_logo, login_background_width,
+                             login_background_height);
 
 #if defined(RENDER_GL) || defined(RENDER_3DS_GL)
     surface_gl_apply_login_filter(mud->surface, mud->sprite_logo);
@@ -618,9 +673,8 @@ void mudclient_render_login_scene_sprites(mudclient *mud) {
     delay_ticks(LOGIN_RENDER_DELAY);
 #endif
 
-    surface_screen_raster_to_sprite(mud->surface, mud->sprite_logo + 1, 0, 0,
-                                    mud->surface->width,
-                                    login_background_height);
+    login_capture_background(mud, mud->sprite_logo + 1,
+                             login_background_width, login_background_height);
 
 #if defined(RENDER_GL) || defined(RENDER_3DS_GL)
     surface_gl_apply_login_filter(mud->surface, mud->sprite_logo + 1);
@@ -691,9 +745,8 @@ void mudclient_render_login_scene_sprites(mudclient *mud) {
     delay_ticks(LOGIN_RENDER_DELAY);
 #endif
 
-    surface_screen_raster_to_sprite(mud->surface, mud->sprite_logo + 2, 0, 0,
-                                    mud->surface->width,
-                                    login_background_height);
+    login_capture_background(mud, mud->sprite_logo + 2,
+                             login_background_width, login_background_height);
 
 #if defined(RENDER_GL) || defined(RENDER_3DS_GL)
     surface_gl_apply_login_filter(mud->surface, mud->sprite_logo + 2);
@@ -721,8 +774,7 @@ void mudclient_render_login_scene_sprites(mudclient *mud) {
 }
 
 void mudclient_draw_login_screens(mudclient *mud) {
-    int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
-                     mud->surface->height < MUD_VANILLA_HEIGHT;
+    int is_compact = login_is_compact(mud);
 
     int login_background_width = is_compact ? MUD_MIN_WIDTH : MUD_VANILLA_WIDTH;
     int login_background_height = is_compact ? 125 : 200;
@@ -757,8 +809,11 @@ void mudclient_draw_login_screens(mudclient *mud) {
 
         int cycle = (mud->login_timer * 2) % 3072;
 
-        int scale_login = login_background_height !=
-                          mud->surface->sprite_height[mud->sprite_logo];
+        int scale_login =
+            login_background_height !=
+                mud->surface->sprite_height[mud->sprite_logo] ||
+            login_background_width !=
+                mud->surface->sprite_width[mud->sprite_logo];
 
         int sprite_offset = cycle / 1024;
 
@@ -868,8 +923,7 @@ void mudclient_draw_login_screens(mudclient *mud) {
 }
 
 void mudclient_handle_login_screen_input(mudclient *mud) {
-    int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
-                     mud->surface->height < MUD_VANILLA_HEIGHT;
+    int is_compact = login_is_compact(mud);
 
     if (mud->show_dialog_confirm) {
         mudclient_handle_confirm_input(mud);
