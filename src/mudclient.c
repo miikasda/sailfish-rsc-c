@@ -2616,6 +2616,121 @@ void mudclient_update_fov(mudclient *mud) {
 #endif
 
 #ifdef RENDER_GL
+static void sailfish_map_rect_to_window(mudclient *mud, int tl_x, int tl_y,
+                                        int width, int height, int *out_x,
+                                        int *out_y, int *out_w, int *out_h,
+                                        int *out_pad) {
+#ifdef SAILFISH
+    SDL_Window *window = mud->gl_window ? mud->gl_window : mud->window;
+
+    if (window == NULL) {
+        *out_x = tl_x;
+        *out_y = tl_y;
+        *out_w = width;
+        *out_h = height;
+        if (out_pad) {
+            *out_pad = 1;
+        }
+        return;
+    }
+
+    int window_width = 0;
+    int window_height = 0;
+    SDL_GetWindowSize(window, &window_width, &window_height);
+
+    if (window_width <= 0 || window_height <= 0 || mud->game_width <= 0 ||
+        mud->game_height <= 0) {
+        *out_x = tl_x;
+        *out_y = tl_y;
+        *out_w = width;
+        *out_h = height;
+        if (out_pad) {
+            *out_pad = 1;
+        }
+        return;
+    }
+
+    float scale_w = window_width / (float)mud->game_height;
+    float scale_h = window_height / (float)mud->game_width;
+    float scale = scale_w < scale_h ? scale_w : scale_h;
+
+    int scaled_w = (int)roundf(mud->game_height * scale);
+    int scaled_h = (int)roundf(mud->game_width * scale);
+
+    if (scaled_w <= 0 || scaled_h <= 0) {
+        *out_x = tl_x;
+        *out_y = tl_y;
+        *out_w = width;
+        *out_h = height;
+        if (out_pad) {
+            *out_pad = 1;
+        }
+        return;
+    }
+
+    int x_offset = (window_width - scaled_w) / 2;
+    int y_offset = (window_height - scaled_h) / 2;
+
+    float min_x = 1e9f, min_y = 1e9f;
+    float max_x = -1e9f, max_y = -1e9f;
+
+    const int gx[4] = {tl_x, tl_x + width, tl_x, tl_x + width};
+    const int gy[4] = {tl_y, tl_y, tl_y + height, tl_y + height};
+
+    for (int i = 0; i < 4; i++) {
+        float local_x =
+            (scaled_w - 1) - (gy[i] * (float)scaled_w / mud->game_height);
+        float local_y = (gx[i] * (float)scaled_h / mud->game_width);
+
+        float win_x = local_x + x_offset;
+        float win_y = local_y + y_offset;
+
+        if (win_x < min_x) {
+            min_x = win_x;
+        }
+        if (win_x > max_x) {
+            max_x = win_x;
+        }
+        if (win_y < min_y) {
+            min_y = win_y;
+        }
+        if (win_y > max_y) {
+            max_y = win_y;
+        }
+    }
+
+    int ix = (int)floorf(min_x);
+    int iy = (int)floorf(min_y);
+    int iw = (int)ceilf(max_x) - ix;
+    int ih = (int)ceilf(max_y) - iy;
+
+    if (iw < 0) {
+        iw = 0;
+    }
+    if (ih < 0) {
+        ih = 0;
+    }
+
+    *out_x = ix;
+    *out_y = iy;
+    *out_w = iw;
+    *out_h = ih;
+    if (out_pad) {
+        int pad = (int)ceilf(scale);
+        *out_pad = pad > 0 ? pad : 1;
+    }
+#else
+    (void)mud;
+    *out_x = tl_x;
+    *out_y = tl_y;
+    *out_w = width;
+    *out_h = height;
+    if (out_pad) {
+        *out_pad = 1;
+    }
+#endif
+}
+
 void mudclient_gl_get_viewport(mudclient *mud, int x, int y, int width,
                                int height, int *out_x, int *out_y, int *out_w,
                                int *out_h) {
@@ -2668,6 +2783,60 @@ void mudclient_gl_scissor(mudclient *mud, int x, int y, int width,
     int vp_y = y;
     int vp_w = width;
     int vp_h = height;
+
+#ifdef SAILFISH
+    SDL_Window *window = mud->gl_window ? mud->gl_window : mud->window;
+    int window_width = 0;
+    int window_height = 0;
+
+    if (window != NULL) {
+        SDL_GetWindowSize(window, &window_width, &window_height);
+    }
+
+    if (window_width > 0 && window_height > 0 && mud->game_width > 0 &&
+        mud->game_height > 0) {
+        int tl_x = x;
+        int tl_y = mud->game_height - y - height;
+
+        int win_x = 0;
+        int win_y = 0;
+        int win_w = 0;
+        int win_h = 0;
+        int pad = 1;
+
+        sailfish_map_rect_to_window(mud, tl_x, tl_y, width, height, &win_x,
+                                    &win_y, &win_w, &win_h, &pad);
+
+        vp_x = win_x - pad;
+        vp_y = window_height - (win_y + win_h) - pad;
+        vp_w = win_w + (pad * 2);
+        vp_h = win_h + (pad * 2);
+
+        if (vp_x < 0) {
+            vp_w += vp_x;
+            vp_x = 0;
+        }
+        if (vp_y < 0) {
+            vp_h += vp_y;
+            vp_y = 0;
+        }
+        if (vp_x + vp_w > window_width) {
+            vp_w = window_width - vp_x;
+        }
+        if (vp_y + vp_h > window_height) {
+            vp_h = window_height - vp_y;
+        }
+        if (vp_w < 0) {
+            vp_w = 0;
+        }
+        if (vp_h < 0) {
+            vp_h = 0;
+        }
+
+        glScissor(vp_x, vp_y, vp_w, vp_h);
+        return;
+    }
+#endif
 
     mudclient_gl_get_viewport(mud, x, y, width, height, &vp_x, &vp_y, &vp_w,
                               &vp_h);
