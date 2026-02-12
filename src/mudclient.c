@@ -2752,13 +2752,21 @@ void mudclient_gl_get_viewport(mudclient *mud, int x, int y, int width,
 #ifdef SAILFISH
     if (window_width > 0 && window_height > 0 && mud->game_width > 0 &&
         mud->game_height > 0) {
-        float scale_x = window_width / (float)mud->game_width;
-        float scale_y = window_height / (float)mud->game_height;
+        int tl_x = x;
+        int tl_y = mud->game_height - y - height;
 
-        *out_x = (int)roundf(x * scale_x);
-        *out_y = (int)roundf(y * scale_y);
-        *out_w = (int)roundf(width * scale_x);
-        *out_h = (int)roundf(height * scale_y);
+        int win_x = 0;
+        int win_y = 0;
+        int win_w = 0;
+        int win_h = 0;
+
+        sailfish_map_rect_to_window(mud, tl_x, tl_y, width, height, &win_x,
+                                    &win_y, &win_w, &win_h, NULL);
+
+        *out_x = win_x;
+        *out_y = window_height - (win_y + win_h);
+        *out_w = win_w;
+        *out_h = win_h;
     }
 #endif
 }
