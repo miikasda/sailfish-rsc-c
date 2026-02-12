@@ -3113,6 +3113,8 @@ int mudclient_load_next_region(mudclient *mud, int lx, int ly) {
         return 0;
     }
 
+    surface_black_screen(mud->surface);
+
     surface_draw_string_centre(
         mud->surface, "Loading... Please wait", mud->surface->width / 2,
         mud->surface->height / 2 + 19, FONT_BOLD_12, WHITE);

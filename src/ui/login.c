@@ -509,6 +509,7 @@ void mudclient_show_login_screen_status(mudclient *mud, char *s, char *s1) {
         }
     }
 
+    surface_black_screen(mud->surface);
     mudclient_draw_login_screens(mud);
     mudclient_reset_timings(mud);
 }
