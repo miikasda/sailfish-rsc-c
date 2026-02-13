@@ -47,19 +47,19 @@ sfdk build
 Optional full rebuild:
 
 ```bash
-CLEAN_BUILD=1 sfdk build
+sfdk build -- --define "clean_build 1"
 ```
 
 Optional debug build:
 
 ```bash
-DEBUG_BUILD=1 sfdk build
+sfdk build -- --define "debug_build 1"
 ```
 
 Optional full rebuild + debug:
 
 ```bash
-CLEAN_BUILD=1 DEBUG_BUILD=1 sfdk build
+sfdk build -- --define "clean_build 1" --define "debug_build 1"
 ```
 
 The RPM appears under:

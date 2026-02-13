@@ -12,6 +12,11 @@ License:    AGPL-3.0-or-later
 URL:        https://github.com/2003scape/rsc-c
 Source0:    %{name}-%{version}.tar.bz2
 
+# Build toggles:
+#   sfdk build -- --define "clean_build 1" --define "debug_build 1"
+%{!?clean_build:%global clean_build 0}
+%{!?debug_build:%global debug_build 0}
+
 BuildRequires: gcc
 BuildRequires: make
 BuildRequires: pkgconfig(sdl2)
@@ -40,14 +45,11 @@ if [ ! -f Makefile ]; then
 fi
 # << build pre
 
-if [ "${CLEAN_BUILD:-0}" = "1" ]; then
+if [ "%{clean_build}" = "1" ]; then
     make clean
 fi
 
-DEBUG_FLAG=0
-if [ "${DEBUG_BUILD:-0}" = "1" ]; then
-    DEBUG_FLAG=1
-fi
+DEBUG_FLAG=%{debug_build}
 
 make %{?_smp_mflags} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1 DEBUG=${DEBUG_FLAG}
 
