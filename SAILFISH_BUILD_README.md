@@ -50,6 +50,18 @@ Optional full rebuild:
 CLEAN_BUILD=1 sfdk build
 ```
 
+Optional debug build:
+
+```bash
+DEBUG_BUILD=1 sfdk build
+```
+
+Optional full rebuild + debug:
+
+```bash
+CLEAN_BUILD=1 DEBUG_BUILD=1 sfdk build
+```
+
 The RPM appears under:
 
 ```

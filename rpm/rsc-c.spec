@@ -44,7 +44,12 @@ if [ "${CLEAN_BUILD:-0}" = "1" ]; then
     make clean
 fi
 
-make %{?_smp_mflags} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1
+DEBUG_FLAG=0
+if [ "${DEBUG_BUILD:-0}" = "1" ]; then
+    DEBUG_FLAG=1
+fi
+
+make %{?_smp_mflags} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1 DEBUG=${DEBUG_FLAG}
 
 # >> build post
 # << build post
@@ -60,7 +65,7 @@ if [ ! -f Makefile ]; then
 fi
 # << install pre
 
-make install DESTDIR=%{buildroot} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1
+make install DESTDIR=%{buildroot} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1 DEBUG=${DEBUG_FLAG}
 
 # Install binary as rsc-c for Sailjail (avoid wrapper exec).
 if [ -f %{buildroot}%{_bindir}/mudclient ]; then

@@ -1,5 +1,5 @@
 #CC = clang
-DEBUG ?= 1
+DEBUG ?= 0
 SDL2 ?= 1
 SAILFISH ?= 0
 GLAD ?= 0
