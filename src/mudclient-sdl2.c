@@ -79,6 +79,9 @@ void mudclient_start_application(mudclient *mud, char *title) {
 
 #ifdef SAILFISH
     SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    /* Sailfish OS: ensure PulseAudio tags are set before SDL audio init. */
+    setenv("PULSE_PROP_application.name", "RS Classic", 1);
+    setenv("PULSE_PROP_media.role", "x-maemo", 1);
 #endif
 
     if (mud->options->members && !mud->options->lowmem) {
