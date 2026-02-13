@@ -79,6 +79,7 @@ endif
 
 ifeq ($(SAILFISH), 1)
 LDFLAGS += -lEGL
+LDFLAGS += -Wl,-rpath,/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64
 endif
 
 # required for loading texture and sprite sheets

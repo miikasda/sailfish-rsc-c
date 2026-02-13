@@ -62,18 +62,20 @@ fi
 
 make install DESTDIR=%{buildroot} SDL2=1 RENDER_GL=1 LEGACY_GL=1 GLAD=1
 
+# Install binary as rsc-c for Sailjail (avoid wrapper exec).
+if [ -f %{buildroot}%{_bindir}/mudclient ]; then
+    mv %{buildroot}%{_bindir}/mudclient %{buildroot}%{_bindir}/rsc-c
+fi
+
 # Replace generic desktop/icon installs with Sailfish paths.
 rm -f %{buildroot}%{_datadir}/applications/*.desktop
 rm -f %{buildroot}%{_datadir}/pixmaps/rsc-c.png
 install -d %{buildroot}%{_datadir}/applications
 install -d %{buildroot}%{_datadir}/icons/hicolor/86x86/apps
 install -m 644 freedesktop/rsc-c.desktop \
-    %{buildroot}%{_datadir}/applications/harbour-rsc-c.desktop
+    %{buildroot}%{_datadir}/applications/rsc-c.desktop
 install -m 644 web/icon.png \
-    %{buildroot}%{_datadir}/icons/hicolor/86x86/apps/harbour-rsc-c.png
-
-# Sailfish wrapper entrypoint.
-install -m 755 sailfish/harbour-rsc-c.sh %{buildroot}%{_bindir}/harbour-rsc-c
+    %{buildroot}%{_datadir}/icons/hicolor/86x86/apps/rsc-c.png
 
 # >> install post
 # << install post
@@ -81,10 +83,9 @@ install -m 755 sailfish/harbour-rsc-c.sh %{buildroot}%{_bindir}/harbour-rsc-c
 %files
 %license COPYING
 %doc README.md README-SDL.txt
-%{_bindir}/mudclient
-%{_bindir}/harbour-rsc-c
+%{_bindir}/rsc-c
 %{_datadir}/rsc-c
-%{_datadir}/applications/harbour-rsc-c.desktop
-%{_datadir}/icons/hicolor/86x86/apps/harbour-rsc-c.png
+%{_datadir}/applications/rsc-c.desktop
+%{_datadir}/icons/hicolor/86x86/apps/rsc-c.png
 
 %changelog

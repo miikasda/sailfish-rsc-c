@@ -1,6 +1,6 @@
-# Sailfish OS build notes (in-progress)
+# Sailfish OS RPM build notes
 
-Commands confirmed so far for a Sailfish OS SDL2/software build.
+These steps cover the RPM build workflow only.
 
 ## 1. Install SDK targets on the host
 Run once after installing the Sailfish SDK:
@@ -66,4 +66,4 @@ devel-su
 rpm -Uvh /home/defaultuser/rsc-c-*.aarch64.rpm
 ```
 
-Launch from the app grid or run `/usr/bin/harbour-rsc-c` from a terminal.
+Launch from the app grid or run `/usr/bin/rsc-c` from a terminal.

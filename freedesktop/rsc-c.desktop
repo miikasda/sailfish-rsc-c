@@ -1,13 +1,15 @@
 [Desktop Entry]
 Type=Application
 Encoding=UTF-8
-Name=rsc-c mudclient
-Comment=Cross-platform RuneScape Classic source port
-Icon=harbour-rsc-c
-Exec=/usr/bin/harbour-rsc-c
+Name=RS Classic
+Comment=Runescape Classic Sailfish OS port
+Icon=rsc-c
+Exec=/usr/bin/rsc-c
 Terminal=false
 Categories=Game;AdventureGame;RolePlaying;
 X-Nemo-Application-Type=generic
 X-Nemo-Orientation=landscape
 [X-Sailjail]
-Sandboxing=Disabled
+Permissions=Internet;Audio
+OrganizationName=org.malmi
+ApplicationName=rsc-c
