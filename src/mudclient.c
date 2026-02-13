@@ -4992,7 +4992,12 @@ void mudclient_draw_game(mudclient *mud) {
 #endif
 
     if (mud->death_screen_timeout != 0) {
+#ifdef RENDER_GL
+        surface_draw_box(mud->surface, 0, 0, mud->surface->width,
+                         mud->surface->height, BLACK);
+#else
         surface_fade_to_black(mud->surface);
+#endif
 
         surface_draw_string_centre(
             mud->surface, "Oh dear! You are dead...", mud->surface->width / 2,
