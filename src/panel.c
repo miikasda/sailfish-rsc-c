@@ -803,6 +803,10 @@ int panel_get_list_entry_index(Panel *panel, int control) {
 }
 
 void panel_destroy(Panel *panel) {
+    if (panel == NULL) {
+        return;
+    }
+
     for (int i = 0; i < panel->max_controls; i++) {
         free(panel->control_text[i]);
     }

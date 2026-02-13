@@ -274,7 +274,9 @@ void mudclient_resize(mudclient *mud) {
 
         mudclient_create_appearance_panel(mud);
 
-        mud->scene->raster = mud->surface->pixels;
+        if (mud->scene != NULL) {
+            mud->scene->raster = mud->surface->pixels;
+        }
 
         int is_compact = mud->surface->width < MUD_VANILLA_WIDTH ||
                          mud->surface->height < MUD_VANILLA_HEIGHT;
