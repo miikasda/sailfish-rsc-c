@@ -24,6 +24,7 @@ BuildRequires: pkgconfig(SDL2_image)
 BuildRequires: pkgconfig(maliit-glib)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(gio-2.0)
+BuildRequires: pkgconfig(wayland-client)
 
 Requires: SDL2
 Requires: SDL2_image

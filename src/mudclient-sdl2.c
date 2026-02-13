@@ -1,6 +1,10 @@
 #include "mudclient.h"
 
 #ifdef SDL2
+#ifdef SAILFISH
+#include <SDL2/SDL_syswm.h>
+#include <wayland-client.h>
+#endif
 
 #ifdef __SWITCH__
 static SDL_Joystick *joystick;
@@ -78,7 +82,6 @@ void mudclient_start_application(mudclient *mud, char *title) {
     int init = SDL_INIT_VIDEO;
 
 #ifdef SAILFISH
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     /* Sailfish OS: ensure PulseAudio tags are set before SDL audio init. */
     setenv("PULSE_PROP_application.name", "RS Classic", 1);
     setenv("PULSE_PROP_media.role", "x-maemo", 1);
@@ -221,6 +224,19 @@ void mudclient_start_application(mudclient *mud, char *title) {
             SDL_SetWindowFullscreen(mud->window,
                                     SDL_WINDOW_FULLSCREEN_DESKTOP);
         }
+
+#ifdef SAILFISH
+        SDL_SysWMinfo info;
+        SDL_VERSION(&info.version);
+        if (SDL_GetWindowWMInfo(mud->window, &info) == SDL_TRUE &&
+            info.subsystem == SDL_SYSWM_WAYLAND &&
+            info.info.wl.surface != NULL) {
+            /* Sailfish OS: tell the compositor our buffer is landscape. */
+            wl_surface_set_buffer_transform(info.info.wl.surface,
+                                            WL_OUTPUT_TRANSFORM_270);
+            wl_surface_commit(info.info.wl.surface);
+        }
+#endif
 
         #ifndef RENDER_GL
         mudclient_on_resize(mud);

@@ -17,10 +17,10 @@ selected target image:
 ```bash
 sfdk engine exec sb2 -t SailfishOS-5.0.0.62-aarch64.default -m sdk-install -R \
     zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel \
-    maliit-framework-wayland-devel glib2-devel
+    maliit-framework-wayland-devel glib2-devel wayland-devel
 sfdk engine exec sb2 -t SailfishOS-5.0.0.62-armv7hl.default -m sdk-install -R \
     zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel \
-    maliit-framework-wayland-devel glib2-devel
+    maliit-framework-wayland-devel glib2-devel wayland-devel
 ```
 
 ### Maliit (on-screen keyboard) notes
