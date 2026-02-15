@@ -51,9 +51,17 @@ void get_config_path(const char *file, char *path) {
     const char *xdg = getenv("XDG_CONFIG_HOME");
 
     if (xdg != NULL) {
+#ifdef SAILFISH
+        snprintf(path, PATH_MAX, "%s/org.malmi", xdg);
+        (void)mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR);
+        snprintf(path, PATH_MAX, "%s/org.malmi/rsc-c", xdg);
+        (void)mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR);
+        snprintf(path, PATH_MAX, "%s/org.malmi/rsc-c/%s", xdg, file);
+#else
         snprintf(path, PATH_MAX, "%s/rsc-c", xdg);
         (void)mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR);
         snprintf(path, PATH_MAX, "%s/rsc-c/%s", xdg, file);
+#endif
     } else {
         const char *home = getenv("HOME");
 
@@ -63,9 +71,17 @@ void get_config_path(const char *file, char *path) {
 
         snprintf(path, PATH_MAX, "%s/.config", home);
         (void)mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR);
+#ifdef SAILFISH
+        snprintf(path, PATH_MAX, "%s/.config/org.malmi", home);
+        (void)mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR);
+        snprintf(path, PATH_MAX, "%s/.config/org.malmi/rsc-c", home);
+        (void)mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR);
+        snprintf(path, PATH_MAX, "%s/.config/org.malmi/rsc-c/%s", home, file);
+#else
         snprintf(path, PATH_MAX, "%s/.config/rsc-c", home);
         (void)mkdir(path, S_IRUSR | S_IWUSR | S_IXUSR);
         snprintf(path, PATH_MAX, "%s/.config/rsc-c/%s", home, file);
+#endif
     }
 #else
     snprintf(path, PATH_MAX, "%s", file);

@@ -1,4 +1,5 @@
 #include "options.h"
+#include "sailfish-secrets.h"
 
 #if defined(__unix__) || defined(__unix) ||                                    \
     (defined(__APPLE__) && defined(__MACH__))
@@ -50,8 +51,13 @@ void options_set_defaults(Options *options) {
     options->max_skills = 18;
     options->registration = 0;
     options->idle_logout = 0;
+#ifdef SAILFISH
+    options->remember_username = 1;
+    options->remember_password = 1;
+#else
     options->remember_username = 0;
     options->remember_password = 0;
+#endif
     options->diversify_npcs = 0;
     options->rename_herblaw_items = 0;
 
@@ -230,6 +236,14 @@ void options_save(Options *options) {
 
     char file_buffer[65536] = {0};
 
+#ifdef SAILFISH
+    const char *file_username = "";
+    const char *file_password = "";
+#else
+    const char *file_username = options->username;
+    const char *file_password = options->password;
+#endif
+
     sprintf(file_buffer, OPTIONS_INI_TEMPLATE,
             options->members,               //
             options->fatigue,               //
@@ -247,8 +261,8 @@ void options_save(Options *options) {
             options->idle_logout,           //
             options->remember_username,     //
             options->remember_password,     //
-            options->username,              //
-            options->password,              //
+            file_username,                  //
+            file_password,                  //
             options->browser_command,       //
             options->diversify_npcs,        //
             options->rename_herblaw_items,  //
@@ -322,6 +336,20 @@ void options_save(Options *options) {
     /* restrict access to potentially sensitive info */
     (void)chmod(path, S_IRUSR | S_IWUSR);
 #endif
+
+#ifdef SAILFISH
+    if (options->remember_username) {
+        sailfish_secrets_store_username(options->username);
+    } else {
+        sailfish_secrets_clear_username();
+    }
+
+    if (options->remember_password) {
+        sailfish_secrets_store_password(options->password);
+    } else {
+        sailfish_secrets_clear_password();
+    }
+#endif
 }
 
 void options_load(Options *options) {
@@ -331,93 +359,112 @@ void options_load(Options *options) {
 
     ini_t *options_ini = ini_load(path);
 
-    if (options_ini == NULL) {
-        return;
-    }
-
-    /* connection */
-    OPTION_INI_INT("members", options->members, 0, 1);
-    OPTION_INI_INT("version_config", options->version_config, 0, 256);
-    OPTION_INI_INT("version_maps", options->version_maps, 0, 256);
-    OPTION_INI_INT("version_entity", options->version_entity, 0, 256);
-    OPTION_INI_INT("version_media", options->version_media, 0, 256);
-    OPTION_INI_INT("version_models", options->version_models, 0, 256);
-    OPTION_INI_INT("version_textures", options->version_textures, 0, 256);
-    OPTION_INI_INT("version_sounds", options->version_sounds, 0, 256);
-    OPTION_INI_INT("fatigue", options->fatigue, 0, 1);
-    OPTION_INI_INT("last_world", options->last_world, 0, 256);
-    OPTION_INI_INT("max_quests", options->max_quests, 0, 50);
-    OPTION_INI_INT("max_skills", options->max_skills, 0, 18);
-    OPTION_INI_INT("registration", options->registration, 0, 1);
-    OPTION_INI_INT("idle_logout", options->idle_logout, 0, 1);
-    OPTION_INI_INT("remember_username", options->remember_username, 0, 1);
-    OPTION_INI_INT("remember_password", options->remember_password, 0, 1);
+    if (options_ini != NULL) {
+        /* connection */
+        OPTION_INI_INT("members", options->members, 0, 1);
+        OPTION_INI_INT("version_config", options->version_config, 0, 256);
+        OPTION_INI_INT("version_maps", options->version_maps, 0, 256);
+        OPTION_INI_INT("version_entity", options->version_entity, 0, 256);
+        OPTION_INI_INT("version_media", options->version_media, 0, 256);
+        OPTION_INI_INT("version_models", options->version_models, 0, 256);
+        OPTION_INI_INT("version_textures", options->version_textures, 0, 256);
+        OPTION_INI_INT("version_sounds", options->version_sounds, 0, 256);
+        OPTION_INI_INT("fatigue", options->fatigue, 0, 1);
+        OPTION_INI_INT("last_world", options->last_world, 0, 256);
+        OPTION_INI_INT("max_quests", options->max_quests, 0, 50);
+        OPTION_INI_INT("max_skills", options->max_skills, 0, 18);
+        OPTION_INI_INT("registration", options->registration, 0, 1);
+        OPTION_INI_INT("idle_logout", options->idle_logout, 0, 1);
+        OPTION_INI_INT("remember_username", options->remember_username, 0, 1);
+        OPTION_INI_INT("remember_password", options->remember_password, 0, 1);
+#ifndef SAILFISH
     OPTION_INI_STR("username", options->username, 20);
     OPTION_INI_STR("password", options->password, 20);
-    OPTION_INI_STR("browser_command", options->browser_command, 20);
-#ifdef RENDER_SW
-    OPTION_INI_INT("diversify_npcs", options->diversify_npcs, 0, 1);
 #else
-    OPTION_INI_INT("diversify_npcs", options->diversify_npcs, 0, 0);
+    options->username[0] = '\0';
+    options->password[0] = '\0';
 #endif
-    OPTION_INI_INT("rename_herblaw_items", options->rename_herblaw_items, 0, 1);
+        OPTION_INI_STR("browser_command", options->browser_command, 20);
+#ifdef RENDER_SW
+        OPTION_INI_INT("diversify_npcs", options->diversify_npcs, 0, 1);
+#else
+        OPTION_INI_INT("diversify_npcs", options->diversify_npcs, 0, 0);
+#endif
+        OPTION_INI_INT("rename_herblaw_items", options->rename_herblaw_items, 0,
+                       1);
 
     /* controls */
-    OPTION_INI_INT("mouse_wheel", options->mouse_wheel, 0, 1);
-    OPTION_INI_INT("middle_click_camera", options->middle_click_camera, -100,
-                   100);
-    OPTION_INI_INT("zoom_camera", options->zoom_camera, 0, 1);
-    OPTION_INI_INT("tab_respond", options->tab_respond, 0, 1);
-    OPTION_INI_INT("option_numbers", options->option_numbers, 0, 1);
-    OPTION_INI_INT("compass_menu", options->compass_menu, 0, 1);
-    OPTION_INI_INT("transaction_menus", options->transaction_menus, 0, 1);
-    OPTION_INI_INT("offer_x", options->offer_x, 0, 1);
-    OPTION_INI_INT("last_offer_x", options->last_offer_x, 0, 1);
-    OPTION_INI_INT("wiki_lookup", options->wiki_lookup, 0, 1);
-    OPTION_INI_INT("combat_style_always", options->combat_style_always, 0, 1);
-    OPTION_INI_INT("hold_to_buy", options->hold_to_buy, 0, 1);
-    OPTION_INI_INT("touch_vertical_drag", options->touch_vertical_drag, -100,
-                   100);
-    OPTION_INI_INT("touch_pinch", options->touch_pinch, -100, 100);
-    OPTION_INI_INT("touch_menu_delay", options->touch_menu_delay, 80, 2000);
+        OPTION_INI_INT("mouse_wheel", options->mouse_wheel, 0, 1);
+        OPTION_INI_INT("middle_click_camera", options->middle_click_camera,
+                       -100, 100);
+        OPTION_INI_INT("zoom_camera", options->zoom_camera, 0, 1);
+        OPTION_INI_INT("tab_respond", options->tab_respond, 0, 1);
+        OPTION_INI_INT("option_numbers", options->option_numbers, 0, 1);
+        OPTION_INI_INT("compass_menu", options->compass_menu, 0, 1);
+        OPTION_INI_INT("transaction_menus", options->transaction_menus, 0, 1);
+        OPTION_INI_INT("offer_x", options->offer_x, 0, 1);
+        OPTION_INI_INT("last_offer_x", options->last_offer_x, 0, 1);
+        OPTION_INI_INT("wiki_lookup", options->wiki_lookup, 0, 1);
+        OPTION_INI_INT("combat_style_always", options->combat_style_always, 0,
+                       1);
+        OPTION_INI_INT("hold_to_buy", options->hold_to_buy, 0, 1);
+        OPTION_INI_INT("touch_vertical_drag", options->touch_vertical_drag,
+                       -100, 100);
+        OPTION_INI_INT("touch_pinch", options->touch_pinch, -100, 100);
+        OPTION_INI_INT("touch_menu_delay", options->touch_menu_delay, 80, 2000);
 
     /* display */
-    OPTION_INI_INT("lowmem", options->lowmem, 0, 1);
-    OPTION_INI_INT("interlace", options->interlace, 0, 1);
-    OPTION_INI_INT("flicker", options->flicker, 0, 1);
-    OPTION_INI_INT("fog_of_war", options->fog_of_war, 0, 1);
-    OPTION_INI_INT("ran_target_fps", options->ran_target_fps, 0, 50);
-    OPTION_INI_INT("display_fps", options->display_fps, 0, 1);
-    OPTION_INI_INT("ui_scale", options->ui_scale, 0, 1);
-    OPTION_INI_INT("anti_alias", options->anti_alias, 0, 1);
-    OPTION_INI_INT("field_of_view", options->field_of_view, 0, 880);
-    OPTION_INI_INT("show_roofs", options->show_roofs, 0, 1);
-    OPTION_INI_INT("number_commas", options->number_commas, 0, 1);
-    OPTION_INI_INT("remaining_experience", options->remaining_experience, 0, 1);
-    OPTION_INI_INT("total_experience", options->total_experience, 0, 1);
-    OPTION_INI_INT("experience_drops", options->experience_drops, 0, 1);
-    OPTION_INI_INT("inventory_count", options->inventory_count, 0, 1);
-    OPTION_INI_INT("condense_item_amounts", options->condense_item_amounts, 0,
-                   1);
-    OPTION_INI_INT("certificate_items", options->certificate_items, 0, 1);
-    OPTION_INI_INT("wilderness_warning", options->wilderness_warning, 0, 1);
-    OPTION_INI_INT("status_bars", options->status_bars, 0, 1);
-    OPTION_INI_INT("ground_item_models", options->ground_item_models, 0, 1);
-    OPTION_INI_INT("ground_item_text", options->ground_item_text, 0, 1);
-    OPTION_INI_INT("distant_animation", options->distant_animation, 0, 1);
-    OPTION_INI_INT("tga_sprites", options->tga_sprites, 0, 1);
-    OPTION_INI_INT("show_hover_tooltip", options->show_hover_tooltip, 0, 1);
-    OPTION_INI_INT("touch_keyboard_right", options->touch_keyboard_right, 0, 1);
+        OPTION_INI_INT("lowmem", options->lowmem, 0, 1);
+        OPTION_INI_INT("interlace", options->interlace, 0, 1);
+        OPTION_INI_INT("flicker", options->flicker, 0, 1);
+        OPTION_INI_INT("fog_of_war", options->fog_of_war, 0, 1);
+        OPTION_INI_INT("ran_target_fps", options->ran_target_fps, 0, 50);
+        OPTION_INI_INT("display_fps", options->display_fps, 0, 1);
+        OPTION_INI_INT("ui_scale", options->ui_scale, 0, 1);
+        OPTION_INI_INT("anti_alias", options->anti_alias, 0, 1);
+        OPTION_INI_INT("field_of_view", options->field_of_view, 0, 880);
+        OPTION_INI_INT("show_roofs", options->show_roofs, 0, 1);
+        OPTION_INI_INT("number_commas", options->number_commas, 0, 1);
+        OPTION_INI_INT("remaining_experience", options->remaining_experience,
+                       0, 1);
+        OPTION_INI_INT("total_experience", options->total_experience, 0, 1);
+        OPTION_INI_INT("experience_drops", options->experience_drops, 0, 1);
+        OPTION_INI_INT("inventory_count", options->inventory_count, 0, 1);
+        OPTION_INI_INT("condense_item_amounts",
+                       options->condense_item_amounts, 0, 1);
+        OPTION_INI_INT("certificate_items", options->certificate_items, 0, 1);
+        OPTION_INI_INT("wilderness_warning", options->wilderness_warning, 0, 1);
+        OPTION_INI_INT("status_bars", options->status_bars, 0, 1);
+        OPTION_INI_INT("ground_item_models", options->ground_item_models, 0, 1);
+        OPTION_INI_INT("ground_item_text", options->ground_item_text, 0, 1);
+        OPTION_INI_INT("distant_animation", options->distant_animation, 0, 1);
+        OPTION_INI_INT("tga_sprites", options->tga_sprites, 0, 1);
+        OPTION_INI_INT("show_hover_tooltip", options->show_hover_tooltip, 0, 1);
+        OPTION_INI_INT("touch_keyboard_right", options->touch_keyboard_right, 0,
+                       1);
 
     /* bank */
-    OPTION_INI_INT("bank_search", options->bank_search, 0, 1);
-    OPTION_INI_INT("bank_capacity", options->bank_capacity, 0, 1);
-    OPTION_INI_INT("bank_value", options->bank_value, 0, 1);
-    OPTION_INI_INT("bank_expand", options->bank_expand, 0, 1);
-    OPTION_INI_INT("bank_scroll", options->bank_scroll, 0, 1);
-    OPTION_INI_INT("bank_menus", options->bank_menus, 0, 1);
-    OPTION_INI_INT("bank_inventory", options->bank_inventory, 0, 1);
-    OPTION_INI_INT("bank_maintain_slot", options->bank_maintain_slot, 0, 1);
+        OPTION_INI_INT("bank_search", options->bank_search, 0, 1);
+        OPTION_INI_INT("bank_capacity", options->bank_capacity, 0, 1);
+        OPTION_INI_INT("bank_value", options->bank_value, 0, 1);
+        OPTION_INI_INT("bank_expand", options->bank_expand, 0, 1);
+        OPTION_INI_INT("bank_scroll", options->bank_scroll, 0, 1);
+        OPTION_INI_INT("bank_menus", options->bank_menus, 0, 1);
+        OPTION_INI_INT("bank_inventory", options->bank_inventory, 0, 1);
+        OPTION_INI_INT("bank_maintain_slot", options->bank_maintain_slot, 0, 1);
 
-    ini_free(options_ini);
+        ini_free(options_ini);
+    }
+
+#ifdef SAILFISH
+    if (options->remember_username) {
+        sailfish_secrets_load_username(options->username,
+                                       sizeof(options->username));
+    }
+
+    if (options->remember_password) {
+        sailfish_secrets_load_password(options->password,
+                                       sizeof(options->password));
+    }
+#endif
 }

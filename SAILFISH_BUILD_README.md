@@ -17,10 +17,12 @@ selected target image:
 ```bash
 sfdk engine exec sb2 -t SailfishOS-5.0.0.62-aarch64.default -m sdk-install -R \
     zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel \
-    maliit-framework-wayland-devel glib2-devel wayland-devel
+    maliit-framework-wayland-devel glib2-devel wayland-devel \
+    sailfish-secrets-devel
 sfdk engine exec sb2 -t SailfishOS-5.0.0.62-armv7hl.default -m sdk-install -R \
     zypper in -y gcc make pkgconfig SDL2-devel SDL2_image-devel \
-    maliit-framework-wayland-devel glib2-devel wayland-devel
+    maliit-framework-wayland-devel glib2-devel wayland-devel \
+    sailfish-secrets-devel
 ```
 
 ### Maliit (on-screen keyboard) notes
@@ -29,6 +31,8 @@ sfdk engine exec sb2 -t SailfishOS-5.0.0.62-armv7hl.default -m sdk-install -R \
   `/usr/include/maliit-2/maliit-glib/maliitinputmethod.h`.
 - For the RPM spec, add `BuildRequires: pkgconfig(maliit-glib)` and
   `BuildRequires: pkgconfig(glib-2.0)`.
+- For Sailfish Secrets, add `BuildRequires: pkgconfig(sailfishsecrets)` and
+  install `sailfish-secrets-devel` in the target.
 - Runtime dependency on device: `maliit-framework-wayland-glib`
   (provides `libmaliit-glib.so.2`).
 - If OSK shows but Enter stops responding, a device reboot has fixed it.

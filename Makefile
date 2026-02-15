@@ -1,4 +1,5 @@
 #CC = clang
+CXX ?= g++
 DEBUG ?= 0
 SDL2 ?= 1
 SAILFISH ?= 0
@@ -23,7 +24,11 @@ DATAROOTDIR?= share
 DATADIR?= $(DATAROOTDIR)/rsc-c
 
 SRC = $(wildcard src/*.c src/lib/*.c src/lib/rsa/*.c src/ui/*.c src/custom/*.c)
-OBJ = $(SRC:.c=.o)
+CPP_SRC :=
+ifeq ($(SAILFISH), 1)
+CPP_SRC += src/sailfish-secrets.cpp
+endif
+OBJ = $(SRC:.c=.o) $(CPP_SRC:.cpp=.o)
 
 # remove -fwrapv when code is converted to use unsigned ints or
 # overflow checks are added
@@ -49,12 +54,19 @@ SAILFISH_WRAPPER :=
 
 ifeq ($(SAILFISH), 1)
 CFLAGS += -DSAILFISH
+CXXFLAGS += -std=c++11 -DSAILFISH
 endif
 
 ifeq ($(MALIIT), 1)
 MALIIT_PKG ?= maliit-glib
 CFLAGS += $(shell pkg-config --cflags $(MALIIT_PKG)) -DSAILFISH_MALIIT
 LDFLAGS += $(shell pkg-config --libs $(MALIIT_PKG))
+endif
+
+ifeq ($(SAILFISH), 1)
+SECRETS_PKG ?= sailfishsecrets
+CXXFLAGS += $(shell pkg-config --cflags $(SECRETS_PKG))
+LDFLAGS += $(shell pkg-config --libs $(SECRETS_PKG))
 endif
 
 ifeq ($(VANILLA_IS_DEFAULT), 1)
@@ -127,7 +139,14 @@ endif
 all: mudclient
 
 mudclient: $(OBJ)
+ifeq ($(SAILFISH), 1)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+else
 	$(CC) -o $@ $^ $(LDFLAGS)
+endif
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 install: mudclient
 	mkdir -p $(DESTDIR)$(PREFIX)/$(BINDIR)

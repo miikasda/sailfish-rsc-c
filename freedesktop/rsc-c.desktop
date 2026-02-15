@@ -10,6 +10,6 @@ Categories=Game;AdventureGame;RolePlaying;
 X-Nemo-Application-Type=generic
 X-Nemo-Orientation=landscape
 [X-Sailjail]
-Permissions=Internet;Audio
+Permissions=Internet;Audio;Secrets
 OrganizationName=org.malmi
 ApplicationName=rsc-c

@@ -39,7 +39,7 @@ typedef struct Options Options;
      "idle_logout = %d\n"                                                      \
      "; Remember username on login screen\n"                                   \
      "remember_username = %d\n"                                                \
-     "; Remember password on login screen (not secure)\n"                      \
+    "; Remember password on login screen\n"                                  \
      "remember_password = %d\n\n"                                              \
      "username = %s\n"                                                         \
      "password = %s\n\n"                                                       \
@@ -211,7 +211,7 @@ struct Options {
     /* log out when mouse is idle */
     int idle_logout;
 
-    /* save credentials for login screen (not secure) */
+    /* save credentials for login screen (Sailfish uses Secrets) */
     int remember_username;
     int remember_password;
 

@@ -22,6 +22,7 @@ BuildRequires: make
 BuildRequires: pkgconfig(sdl2)
 BuildRequires: pkgconfig(SDL2_image)
 BuildRequires: pkgconfig(maliit-glib)
+BuildRequires: pkgconfig(sailfishsecrets)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(wayland-client)
@@ -29,6 +30,9 @@ BuildRequires: pkgconfig(wayland-client)
 Requires: SDL2
 Requires: SDL2_image
 Requires: maliit-framework-wayland-glib
+Requires: sailfishsecretsdaemon
+Requires: sailfishsecretsdaemon-secretsplugins-default
+Requires: sailfishsecretsdaemon-cryptoplugins-default
 
 %description
 Cross-platform open source RuneScape Classic client.
