@@ -4,7 +4,7 @@
 # 
 
 Name:       rsc-c
-Summary:    Cross-platform RuneScape Classic source port
+Summary:    RuneScape Classic Sailfish OS port
 Version:    0.1.0
 Release:    1
 Group:      Applications/Games
@@ -35,7 +35,36 @@ Requires: sailfishsecretsdaemon-secretsplugins-default
 Requires: sailfishsecretsdaemon-cryptoplugins-default
 
 %description
-Cross-platform open source RuneScape Classic client.
+RuneScape Classic is the original 2001-era RuneScape MMORPG. This project is an
+open-source RuneScape Classic client port for Sailfish OS. Create your account
+at https://rsc.vet.
+
+Warning:
+This port was created with heavy utilization of OpenAI Codex.
+
+Known issues:
+- While logging in, the login text flickers / changes rapidly
+- Wiki lookup does not work when sailjail is enabled
+- On-screen keyboard Enter key can become disabled; workaround: pkill -f maliit-server
+
+# This section includes metadata for SailfishOS:Chum, see
+# https://github.com/sailfishos-chum/main/blob/main/Metadata.md
+%if 0%{?_chum}
+Title: RuneScape Classic
+Type: desktop-application
+DeveloperName: Miika Malin
+Categories:
+ - Game
+Custom:
+  Repo: https://github.com/miikasda/sailfish-rsc-c
+PackageIcon: https://github.com/miikasda/sailfish-rsc-c/raw/sailfish/web/icon.png
+Screenshots:
+ - https://github.com/miikasda/sailfish-rsc-c/raw/sailfish/screenshot.png
+Links:
+  Homepage: https://github.com/miikasda/sailfish-rsc-c
+  Bugtracker: https://github.com/miikasda/sailfish-rsc-c/issues
+  Donation: https://github.com/sponsors/miikasda
+%endif
 
 %prep
 %setup -q
