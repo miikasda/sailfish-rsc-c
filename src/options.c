@@ -77,7 +77,7 @@ void options_set_defaults(Options *options) {
     options->transaction_menus = 1;
     options->offer_x = 1;
     options->last_offer_x = 1;
-    options->wiki_lookup = 1;
+    options->wiki_lookup = 0;
     options->combat_style_always = 0;
     options->hold_to_buy = 1;
     options->touch_vertical_drag = 33;
