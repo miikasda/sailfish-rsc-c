@@ -4,7 +4,7 @@
 # 
 
 Name:       rsc-c
-Summary:    Cross-platform RuneScape Classic source port
+Summary:    RuneScape Classic Sailfish OS port
 Version:    0.1.0
 Release:    1
 Group:      Applications/Games
