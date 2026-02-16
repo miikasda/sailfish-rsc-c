@@ -5,7 +5,7 @@
 
 Name:       rsc-c
 Summary:    RuneScape Classic Sailfish OS port
-Version:    0.1.0
+Version:    0.1.1
 Release:    1
 Group:      Applications/Games
 License:    AGPL-3.0-or-later
@@ -26,6 +26,7 @@ BuildRequires: pkgconfig(sailfishsecrets)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(wayland-client)
+BuildRequires: pkgconfig(egl)
 
 Requires: SDL2
 Requires: SDL2_image
