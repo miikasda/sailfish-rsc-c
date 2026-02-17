@@ -484,7 +484,7 @@ void mudclient_menu_item_click(mudclient *mud, int i) {
         break;
     case MENU_WIKI_LOOKUP: {
         char *page_name = mud->menu_items[i].wiki_page;
-        char encoded_page_name[128];
+        char encoded_page_name[sizeof(mud->menu_items[0].wiki_page)];
 
         if (strncmp(page_name, "Special:", strlen("Special:")) == 0) {
             snprintf(encoded_page_name, sizeof(encoded_page_name), "%s",
