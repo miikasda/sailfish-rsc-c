@@ -15,7 +15,7 @@ at [https://rsc.vet](https://rsc.vet).
 ## Known issues
 - While logging in, the login text flickers / changes rapidly
 - Wiki lookup does not work when sailjail is enabled
-- On-screen keyboard Enter key can become disabled; workaround: `pkill -f maliit-server`
+
 
 ## Build instructions
 Release build:

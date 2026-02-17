@@ -46,7 +46,6 @@ This port was created with heavy utilization of OpenAI Codex.
 Known issues:
 - While logging in, the login text flickers / changes rapidly
 - Wiki lookup does not work when sailjail is enabled
-- On-screen keyboard Enter key can become disabled; workaround: pkill -f maliit-server
 
 # This section includes metadata for SailfishOS:Chum, see
 # https://github.com/sailfishos-chum/main/blob/main/Metadata.md
