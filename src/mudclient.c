@@ -1527,7 +1527,7 @@ void mudclient_load_media(mudclient *mud) {
 
 void mudclient_load_entities(mudclient *mud) {
 #if defined(RENDER_GL) || defined(RENDER_SW) || defined(RENDER_3DS_GL)
-    char jag[16];
+    char jag[32];
     snprintf(jag, sizeof(jag), "entity%d.jag", mud->options->version_entity);
 
     int8_t *entity_jag = mudclient_read_data_file(
@@ -1972,7 +1972,7 @@ void mudclient_load_models(mudclient *mud) {
 }
 
 void mudclient_load_maps(mudclient *mud) {
-    char jag[16];
+    char jag[32];
 
     snprintf(jag, sizeof(jag), "maps%d.jag", mud->options->version_maps);
     mud->world->map_pack = mudclient_read_data_file(

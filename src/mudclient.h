@@ -469,7 +469,7 @@ struct MenuEntry {
     MenuType type;
     char action_text[64];
     char target_text[64];
-    char wiki_page[64];
+    char wiki_page[256];
     /* data related to the target entity */
     int x, y;
     int16_t index;
