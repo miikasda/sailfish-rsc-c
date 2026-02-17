@@ -511,7 +511,12 @@ void mudclient_menu_item_click(mudclient *mud, int i) {
         snprintf(formatted_command, sizeof(formatted_command),
                  mud->options->browser_command, encoded_url);
 
-        system(formatted_command);
+        int command_status = system(formatted_command);
+
+        if (command_status != 0) {
+            mud_error("Browser command failed (status=%d): %s\n",
+                      command_status, formatted_command);
+        }
 #endif
 
         mud->selected_wiki = 0;
