@@ -77,6 +77,11 @@ static SDL_Window *sailfish_get_window(mudclient *mud) {
 #endif
     return mud->window;
 }
+
+static void sailfish_on_app_deactivated(void) {
+    // Prevent OSK from leaking into other apps when this app loses focus.
+    sailfish_osk_hide();
+}
 #endif
 
 void mudclient_poll_events(mudclient *mud) {
@@ -634,8 +639,26 @@ void mudclient_poll_events(mudclient *mud) {
         case SDL_WINDOWEVENT:
             if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                 mudclient_on_resize(mud);
+#ifdef SAILFISH
+            } else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
+                       event.window.event == SDL_WINDOWEVENT_HIDDEN ||
+                       event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+                sailfish_on_app_deactivated();
+#endif
             }
             break;
+#ifdef SAILFISH
+#ifdef SDL_APP_WILLENTERBACKGROUND
+        case SDL_APP_WILLENTERBACKGROUND:
+            sailfish_on_app_deactivated();
+            break;
+#endif
+#ifdef SDL_APP_DIDENTERBACKGROUND
+        case SDL_APP_DIDENTERBACKGROUND:
+            sailfish_on_app_deactivated();
+            break;
+#endif
+#endif
         case SDL_TEXTINPUT:
             if (strlen(event.text.text) == 1) {
                 char ch = event.text.text[0];
