@@ -1117,7 +1117,13 @@ int8_t *mudclient_read_data_file(mudclient *mud, char *file, char *description,
 #ifdef ANDROID
     SDL_RWread(archive_stream, header, sizeof(header), 1);
 #else
-    fread(header, sizeof(header), 1, archive_stream);
+    size_t header_read = fread(header, 1, sizeof(header), archive_stream);
+
+    if (header_read != sizeof(header)) {
+        fclose(archive_stream);
+        mud_error("Unable to read file: %s\n", prefixed_file);
+        exit(1);
+    }
 #endif
 #endif
 
@@ -1143,7 +1149,15 @@ int8_t *mudclient_read_data_file(mudclient *mud, char *file, char *description,
 #ifdef ANDROID
         SDL_RWread(archive_stream, archive_data + read, length, 1);
 #else
-        fread(archive_data + read, length, 1, archive_stream);
+        size_t bytes_read =
+            fread(archive_data + read, 1, (size_t)length, archive_stream);
+
+        if (bytes_read != (size_t)length) {
+            free(archive_data);
+            fclose(archive_stream);
+            mud_error("Unable to read file: %s\n", prefixed_file);
+            exit(1);
+        }
 #endif
 
         read += length;
@@ -1513,7 +1527,7 @@ void mudclient_load_media(mudclient *mud) {
 
 void mudclient_load_entities(mudclient *mud) {
 #if defined(RENDER_GL) || defined(RENDER_SW) || defined(RENDER_3DS_GL)
-    char jag[16];
+    char jag[32];
     snprintf(jag, sizeof(jag), "entity%d.jag", mud->options->version_entity);
 
     int8_t *entity_jag = mudclient_read_data_file(
@@ -1958,7 +1972,7 @@ void mudclient_load_models(mudclient *mud) {
 }
 
 void mudclient_load_maps(mudclient *mud) {
-    char jag[16];
+    char jag[32];
 
     snprintf(jag, sizeof(jag), "maps%d.jag", mud->options->version_maps);
     mud->world->map_pack = mudclient_read_data_file(

@@ -5,7 +5,7 @@
 
 Name:       rsc-c
 Summary:    RuneScape Classic Sailfish OS port
-Version:    0.1.0
+Version:    0.1.1
 Release:    1
 Group:      Applications/Games
 License:    AGPL-3.0-or-later
@@ -26,6 +26,7 @@ BuildRequires: pkgconfig(sailfishsecrets)
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(wayland-client)
+BuildRequires: pkgconfig(egl)
 
 Requires: SDL2
 Requires: SDL2_image
@@ -45,7 +46,6 @@ This port was created with heavy utilization of OpenAI Codex.
 Known issues:
 - While logging in, the login text flickers / changes rapidly
 - Wiki lookup does not work when sailjail is enabled
-- On-screen keyboard Enter key can become disabled; workaround: pkill -f maliit-server
 
 # This section includes metadata for SailfishOS:Chum, see
 # https://github.com/sailfishos-chum/main/blob/main/Metadata.md

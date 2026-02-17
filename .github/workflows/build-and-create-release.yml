@@ -36,10 +36,8 @@ jobs:
           uses: "WyriHaximus/github-action-get-previous-tag@v1"
           with:
             prefix: sfos-
-            # Temporary first-release fallback. After the first release, change
-            # this back to:
-            #   fallback: ${{ steps.current_version.outputs.current_version }}
-            fallback: sfos-0.0.0
+            # Use current version as fallback so no release is triggered.
+            fallback: ${{ steps.current_version.outputs.current_version }}
 
   build:
     if: github.event.pull_request.merged == true

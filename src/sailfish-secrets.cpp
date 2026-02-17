@@ -115,6 +115,15 @@ Secret::Identifier make_identifier(const QString &name) {
                               SecretManager::DefaultEncryptedStoragePluginName);
 }
 
+void delete_secret_if_present(SecretManager *manager, const QString &name) {
+    DeleteSecretRequest request;
+    request.setManager(manager);
+    request.setIdentifier(make_identifier(name));
+    request.setUserInteractionMode(SecretManager::SystemInteraction);
+    request.startRequest();
+    request.waitForFinished();
+}
+
 int store_secret(const QString &name, const char *value) {
     if (value == nullptr) {
         value = "";
@@ -139,6 +148,9 @@ int store_secret(const QString &name, const char *value) {
     Secret secret(make_identifier(name));
     secret.setType(Secret::TypeBlob);
     secret.setData(QByteArray(value));
+
+    /* Replace existing value when saving updated credentials. */
+    delete_secret_if_present(&manager, name);
 
     StoreSecretRequest request;
     request.setManager(&manager);

@@ -907,7 +907,7 @@ void surface_gl_raster_to_sprite(Surface *surface, int sprite_id, int x,
                                  int y, int width, int height) {
     int read_width = surface->mud->game_width;
     int read_height = surface->mud->game_height;
-    uint32_t *screen_pixels = surface->gl_screen_pixels;
+    int32_t *screen_pixels = surface->gl_screen_pixels;
 #ifdef SAILFISH
     SDL_Window *window =
         surface->mud->gl_window ? surface->mud->gl_window : surface->mud->window;
@@ -921,8 +921,8 @@ void surface_gl_raster_to_sprite(Surface *surface, int sprite_id, int x,
     if (window_width > 0 && window_height > 0) {
         read_width = window_width;
         read_height = window_height;
-        screen_pixels =
-            calloc((size_t)read_width * (size_t)read_height, sizeof(uint32_t));
+        screen_pixels = calloc((size_t)read_width * (size_t)read_height,
+                               sizeof(*screen_pixels));
     }
 #endif
 
@@ -973,7 +973,7 @@ void surface_gl_raster_to_sprite(Surface *surface, int sprite_id, int x,
 
             int src_index = src_x + (read_height - src_y - 1) * read_width;
 
-            uint32_t colour = screen_pixels[src_index];
+            uint32_t colour = (uint32_t)screen_pixels[src_index];
 
             int texture_offset =
                 ((offset_y + yy) * 1024 + (offset_x + xx)) * 3;

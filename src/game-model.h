@@ -265,7 +265,7 @@ int game_model_gl_buffer_models(gl_vertex_buffer ***vertex_buffers,
                                 GameModel **game_models,
                                 int game_models_length);
 #endif
-#if defined(RENDER_GL) && defined(EMSCRIPTEN)
+#if defined(RENDER_GL) && (defined(EMSCRIPTEN) || defined(SAILFISH))
 void game_model_gl_create_pick_buffer(gl_vertex_buffer *pick_buffer,
                                       int vbo_length, int ebo_length);
 void game_model_gl_buffer_pick_arrays(GameModel *game_model, int *vertex_offset,
