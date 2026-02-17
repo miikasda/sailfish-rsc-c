@@ -176,6 +176,9 @@ static void split_data(ini_t *ini) {
 ini_t* ini_load(const char *filename) {
   ini_t *ini = NULL;
   int n, sz;
+#ifndef ANDROID
+  FILE *fp = NULL;
+#endif
 
   /* Init ini struct */
   ini = malloc(sizeof(*ini));
@@ -188,7 +191,7 @@ ini_t* ini_load(const char *filename) {
 #ifdef ANDROID
   SDL_RWops *fp = SDL_RWFromFile(filename, "rb");
 #else
-  FILE *fp = fopen(filename, "rb");
+  fp = fopen(filename, "rb");
 #endif
   if (!fp) {
     goto fail;
