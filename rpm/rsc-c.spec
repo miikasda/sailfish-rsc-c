@@ -5,10 +5,10 @@
 
 Name:       rsc-c
 Summary:    RuneScape Classic Sailfish OS port
-Version:    0.1.1
+Version:    0.1.2
 Release:    1
 Group:      Applications/Games
-License:    AGPL-3.0-or-later
+License:    AGPLv3
 URL:        https://github.com/2003scape/rsc-c
 Source0:    %{name}-%{version}.tar.bz2
 
