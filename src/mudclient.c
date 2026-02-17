@@ -1117,7 +1117,13 @@ int8_t *mudclient_read_data_file(mudclient *mud, char *file, char *description,
 #ifdef ANDROID
     SDL_RWread(archive_stream, header, sizeof(header), 1);
 #else
-    fread(header, sizeof(header), 1, archive_stream);
+    size_t header_read = fread(header, 1, sizeof(header), archive_stream);
+
+    if (header_read != sizeof(header)) {
+        fclose(archive_stream);
+        mud_error("Unable to read file: %s\n", prefixed_file);
+        exit(1);
+    }
 #endif
 #endif
 
@@ -1143,7 +1149,15 @@ int8_t *mudclient_read_data_file(mudclient *mud, char *file, char *description,
 #ifdef ANDROID
         SDL_RWread(archive_stream, archive_data + read, length, 1);
 #else
-        fread(archive_data + read, length, 1, archive_stream);
+        size_t bytes_read =
+            fread(archive_data + read, 1, (size_t)length, archive_stream);
+
+        if (bytes_read != (size_t)length) {
+            free(archive_data);
+            fclose(archive_stream);
+            mud_error("Unable to read file: %s\n", prefixed_file);
+            exit(1);
+        }
 #endif
 
         read += length;
