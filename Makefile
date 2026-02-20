@@ -54,7 +54,7 @@ SAILFISH_WRAPPER :=
 
 ifeq ($(SAILFISH), 1)
 CFLAGS += -DSAILFISH
-CXXFLAGS += -std=c++11 -DSAILFISH
+CXXFLAGS += -std=c++11 -DSAILFISH -fPIC
 endif
 
 ifeq ($(MALIIT), 1)

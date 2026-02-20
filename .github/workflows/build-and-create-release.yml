@@ -64,6 +64,12 @@ jobs:
         with:
           release: ${{ env.sfos_version }}
           arch: armv7hl
+      - name: Build i486
+        id: build_i486
+        uses: coderus/github-sfos-build@master
+        with:
+          release: ${{ env.sfos_version }}
+          arch: i486
       - name: Upload build result
         id: upload
         uses: actions/upload-artifact@v4
