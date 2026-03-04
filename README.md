@@ -4,12 +4,19 @@ RuneScape Classic is the original 2001-era RuneScape MMORPG. This project is an
 open-source RuneScape Classic client port for Sailfish OS. Create your account
 at [https://rsc.vet](https://rsc.vet).
 
-<p align="center">
-    <video src="./sailfish-media/gameplay.mp4" controls preload="metadata" style="max-width:100%; height:auto;"></video>
-  </p>
+[![Gameplay video](./sailfish-media/screenshot.png)](./sailfish-media/gameplay.mp4)
+
+Click the screenshot to play a gameplay video.
 
 > [!WARNING]  
 > This port was created with heavy utilization of OpenAI Codex.
+
+
+## Downloads
+You can install the game either from GitHub Releases or from Chum.
+
+- [GitHub Releases (prebuilt packages)](https://github.com/miikasda/sailfish-rsc-c/releases)
+- [SailfishOS:Chum app page](https://sailfishos-chum.github.io/apps/rsc-c/)
 
 
 ## Known issues
