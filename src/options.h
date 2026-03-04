@@ -13,6 +13,10 @@ typedef struct Options Options;
 #include "lib/ini.h"
 #include "mudclient.h"
 
+#define OPTIONS_ORIENTATION_PORTRAIT 0
+#define OPTIONS_ORIENTATION_LANDSCAPE 1
+#define OPTIONS_ORIENTATION_LANDSCAPE_INVERTED 2
+
 #define OPTIONS_INI_TEMPLATE                                                   \
     ("; Disable registration and load sounds, P2P landscape and items ("       \
      "requires\n; restart)\n"                                                  \
@@ -83,6 +87,9 @@ typedef struct Options Options;
      "touch_pinch = %d\n"                                                      \
      "; Milliseconds until right click \n"                                     \
      "touch_menu_delay = %d\n\n"                                               \
+     "; Screen orientation (Sailfish): 0=portrait, 1=landscape, "              \
+     "2=landscape inverted\n"                                                   \
+     "orientation = %d\n\n"                                                     \
                                                                                \
      "; Low memory mode\n"                                                     \
      "lowmem = %d\n"                                                           \
@@ -275,6 +282,10 @@ struct Options {
 
     /* milliseconds until right click */
     int touch_menu_delay;
+
+    /* screen orientation (Sailfish): portrait, landscape, landscape inverted
+     */
+    int orientation;
 
     /* low memory mode */
     int lowmem;

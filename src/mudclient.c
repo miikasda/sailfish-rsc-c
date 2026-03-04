@@ -2681,6 +2681,53 @@ void mudclient_update_fov(mudclient *mud) {
 #endif
 
 #ifdef RENDER_GL
+#ifdef SAILFISH
+static void sailfish_get_render_base_size(const mudclient *mud, float *base_w,
+                                          float *base_h) {
+    int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
+
+    if (mud->options != NULL) {
+        orientation = mud->options->orientation;
+    }
+
+    int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
+
+    *base_w = rotated ? (float)mud->game_height : (float)mud->game_width;
+    *base_h = rotated ? (float)mud->game_width : (float)mud->game_height;
+}
+
+static void sailfish_map_game_point_to_window(const mudclient *mud, int scaled_w,
+                                              int scaled_h, int x_offset,
+                                              int y_offset, int game_x,
+                                              int game_y, float *out_x,
+                                              float *out_y) {
+    int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
+
+    if (mud->options != NULL) {
+        orientation = mud->options->orientation;
+    }
+
+    float local_x = 0.0f;
+    float local_y = 0.0f;
+
+    if (orientation == OPTIONS_ORIENTATION_LANDSCAPE_INVERTED) {
+        local_x = game_y * (float)scaled_w / mud->game_height;
+        local_y = (scaled_h - 1) -
+                  (game_x * (float)scaled_h / mud->game_width);
+    } else if (orientation == OPTIONS_ORIENTATION_PORTRAIT) {
+        local_x = game_x * (float)scaled_w / mud->game_width;
+        local_y = game_y * (float)scaled_h / mud->game_height;
+    } else {
+        local_y = game_x * (float)scaled_h / mud->game_width;
+        local_x = (scaled_w - 1) -
+                  (game_y * (float)scaled_w / mud->game_height);
+    }
+
+    *out_x = local_x + x_offset;
+    *out_y = local_y + y_offset;
+}
+#endif
+
 static void sailfish_map_rect_to_window(mudclient *mud, int tl_x, int tl_y,
                                         int width, int height, int *out_x,
                                         int *out_y, int *out_w, int *out_h,
@@ -2715,12 +2762,16 @@ static void sailfish_map_rect_to_window(mudclient *mud, int tl_x, int tl_y,
         return;
     }
 
-    float scale_w = window_width / (float)mud->game_height;
-    float scale_h = window_height / (float)mud->game_width;
+    float base_w = 0.0f;
+    float base_h = 0.0f;
+    sailfish_get_render_base_size(mud, &base_w, &base_h);
+
+    float scale_w = window_width / base_w;
+    float scale_h = window_height / base_h;
     float scale = scale_w < scale_h ? scale_w : scale_h;
 
-    int scaled_w = (int)roundf(mud->game_height * scale);
-    int scaled_h = (int)roundf(mud->game_width * scale);
+    int scaled_w = (int)(base_w * scale);
+    int scaled_h = (int)(base_h * scale);
 
     if (scaled_w <= 0 || scaled_h <= 0) {
         *out_x = tl_x;
@@ -2743,12 +2794,11 @@ static void sailfish_map_rect_to_window(mudclient *mud, int tl_x, int tl_y,
     const int gy[4] = {tl_y, tl_y, tl_y + height, tl_y + height};
 
     for (int i = 0; i < 4; i++) {
-        float local_x =
-            (scaled_w - 1) - (gy[i] * (float)scaled_w / mud->game_height);
-        float local_y = (gx[i] * (float)scaled_h / mud->game_width);
-
-        float win_x = local_x + x_offset;
-        float win_y = local_y + y_offset;
+        float win_x = 0.0f;
+        float win_y = 0.0f;
+        sailfish_map_game_point_to_window(mud, scaled_w, scaled_h, x_offset,
+                                          y_offset, gx[i], gy[i], &win_x,
+                                          &win_y);
 
         if (win_x < min_x) {
             min_x = win_x;
@@ -2917,28 +2967,21 @@ void mudclient_gl_scissor(mudclient *mud, int x, int y, int width,
 }
 #endif
 
-void mudclient_start_game(mudclient *mud) {
-    mudclient_load_game_config(mud);
-
-    if (mud->error_loading_data) {
-        return;
-    }
-
-    mudclient_set_target_fps(mud, 50);
-
-    panel_base_sprite_start = mud->sprite_util;
-
+void mudclient_rebuild_ui_tab_panels(mudclient *mud) {
     int x = MUD_WIDTH - 199;
     int y = UI_BUTTON_SIZE + 1;
-
     int is_touch = mudclient_is_touch(mud);
+
+    if (mud->panel_quests != NULL) {
+        panel_destroy(mud->panel_quests);
+        free(mud->panel_quests);
+    }
 
     mud->panel_quests = malloc(sizeof(Panel));
     panel_new(mud->panel_quests, mud->surface, 5);
 
     if (is_touch) {
         x = UI_TABS_TOUCH_X - STATS_WIDTH - 1;
-
         y = (UI_TABS_TOUCH_Y + UI_TABS_TOUCH_HEIGHT) - STATS_COMPACT_HEIGHT -
             STATS_TAB_HEIGHT - 5;
     }
@@ -2946,6 +2989,11 @@ void mudclient_start_game(mudclient *mud) {
     mud->control_list_quest = panel_add_text_list_interactive(
         mud->panel_quests, x, y + STATS_TAB_HEIGHT, STATS_WIDTH,
         STATS_HEIGHT - STATS_TAB_HEIGHT, FONT_BOLD_12, 500, 1);
+
+    if (mud->panel_magic != NULL) {
+        panel_destroy(mud->panel_magic);
+        free(mud->panel_magic);
+    }
 
     mud->panel_magic = malloc(sizeof(Panel));
     panel_new(mud->panel_magic, mud->surface, 5);
@@ -2959,6 +3007,11 @@ void mudclient_start_game(mudclient *mud) {
         mud->panel_magic, x, y + MAGIC_TAB_HEIGHT - (is_touch ? 11 : 0),
         MAGIC_WIDTH, 90 + (is_touch ? 16 : 0), FONT_BOLD_12, 500, 1);
 
+    if (mud->panel_social_list != NULL) {
+        panel_destroy(mud->panel_social_list);
+        free(mud->panel_social_list);
+    }
+
     mud->panel_social_list = malloc(sizeof(Panel));
     panel_new(mud->panel_social_list, mud->surface, 5);
 
@@ -2966,6 +3019,19 @@ void mudclient_start_game(mudclient *mud) {
         mud->panel_social_list, x,
         y + SOCIAL_TAB_HEIGHT + 16 - (is_touch ? 11 : 0), 196,
         126 + (is_touch ? 16 : 0), FONT_BOLD_12, 500, 1);
+}
+
+void mudclient_start_game(mudclient *mud) {
+    mudclient_load_game_config(mud);
+
+    if (mud->error_loading_data) {
+        return;
+    }
+
+    mudclient_set_target_fps(mud, 50);
+
+    panel_base_sprite_start = mud->sprite_util;
+    mudclient_rebuild_ui_tab_panels(mud);
 
     mudclient_load_media(mud);
 
@@ -5419,7 +5485,16 @@ void mudclient_on_resize(mudclient *mud) {
         int window_h = new_height;
 
         if (window_w > 0 && window_h > 0) {
-            float target_aspect = window_h / (float)window_w;
+            int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
+
+            if (mud->options != NULL) {
+                orientation = mud->options->orientation;
+            }
+
+            int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
+            float target_aspect =
+                rotated ? (window_h / (float)window_w)
+                        : (window_w / (float)window_h);
             float base_aspect = MUD_WIDTH / (float)MUD_HEIGHT;
 
             if (target_aspect > base_aspect) {

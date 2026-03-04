@@ -89,6 +89,7 @@ void options_set_defaults(Options *options) {
     options->touch_vertical_drag = 33;
     options->touch_pinch = 50;
     options->touch_menu_delay = 350;
+    options->orientation = OPTIONS_ORIENTATION_LANDSCAPE;
 
     /* display */
     options->lowmem = 0;
@@ -169,6 +170,7 @@ void options_set_vanilla(Options *options) {
     options->touch_vertical_drag = 33;
     options->touch_pinch = 50;
     options->touch_menu_delay = 350;
+    options->orientation = OPTIONS_ORIENTATION_LANDSCAPE;
 
     /* display */
     options->lowmem = 0;
@@ -282,6 +284,7 @@ void options_save(Options *options) {
             options->touch_vertical_drag,   //
             options->touch_pinch,           //
             options->touch_menu_delay,      //
+            options->orientation,           //
                                             //
             options->lowmem,                //
             options->interlace,             //
@@ -412,6 +415,9 @@ void options_load(Options *options) {
                        -100, 100);
         OPTION_INI_INT("touch_pinch", options->touch_pinch, -100, 100);
         OPTION_INI_INT("touch_menu_delay", options->touch_menu_delay, 80, 2000);
+        OPTION_INI_INT("orientation", options->orientation,
+                       OPTIONS_ORIENTATION_PORTRAIT,
+                       OPTIONS_ORIENTATION_LANDSCAPE_INVERTED);
 
     /* display */
         OPTION_INI_INT("lowmem", options->lowmem, 0, 1);

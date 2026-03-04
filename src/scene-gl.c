@@ -67,6 +67,18 @@ void scene_gl_update_camera(Scene *scene) {
 /* normal GL only */
 #ifdef RENDER_GL
 #ifdef SAILFISH
+static float scene_gl_sailfish_rotation_angle(Scene *scene) {
+    switch (scene->surface->mud->options->orientation) {
+    case OPTIONS_ORIENTATION_PORTRAIT:
+        return 0.0f;
+    case OPTIONS_ORIENTATION_LANDSCAPE_INVERTED:
+        return 90.0f;
+    case OPTIONS_ORIENTATION_LANDSCAPE:
+    default:
+        return -90.0f;
+    }
+}
+
 static void scene_gl_get_mouse_pixels(Scene *scene, int game_x, int game_y,
                                       int *out_x, int *out_y, int *out_w,
                                       int *out_h) {
@@ -95,20 +107,38 @@ static void scene_gl_get_mouse_pixels(Scene *scene, int game_x, int game_y,
                 return;
             }
 
-            float scale_w = window_width / (float)game_height;
-            float scale_h = window_height / (float)game_width;
+            int orientation = scene->surface->mud->options->orientation;
+            int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
+            float base_width = rotated ? (float)game_height : (float)game_width;
+            float base_height = rotated ? (float)game_width : (float)game_height;
+
+            float scale_w = window_width / base_width;
+            float scale_h = window_height / base_height;
             float scale = scale_w < scale_h ? scale_w : scale_h;
 
-            int scaled_w = (int)(game_height * scale);
-            int scaled_h = (int)(game_width * scale);
+            int scaled_w = (int)(base_width * scale);
+            int scaled_h = (int)(base_height * scale);
 
             int x_offset = (window_width - scaled_w) / 2;
             int y_offset = (window_height - scaled_h) / 2;
 
-            int local_y = (int)((game_x * (float)scaled_h) / game_width);
-            int local_x =
-                (scaled_w - 1) -
-                (int)((game_y * (float)scaled_w) / game_height);
+            int local_x = 0;
+            int local_y = 0;
+
+            if (orientation == OPTIONS_ORIENTATION_LANDSCAPE_INVERTED) {
+                local_x = (int)((game_y * (float)scaled_w) / game_height);
+                local_y =
+                    (scaled_h - 1) -
+                    (int)((game_x * (float)scaled_h) / game_width);
+            } else if (orientation == OPTIONS_ORIENTATION_PORTRAIT) {
+                local_x = (int)((game_x * (float)scaled_w) / game_width);
+                local_y = (int)((game_y * (float)scaled_h) / game_height);
+            } else {
+                local_y = (int)((game_x * (float)scaled_h) / game_width);
+                local_x =
+                    (scaled_w - 1) -
+                    (int)((game_y * (float)scaled_w) / game_height);
+            }
 
             int screen_x = x_offset + local_x;
             int screen_y = y_offset + local_y;
@@ -269,7 +299,7 @@ void scene_gl_render(Scene *scene) {
 #ifdef SAILFISH
         {
             mat4 rotation = GLM_MAT4_IDENTITY_INIT;
-            glm_rotate(rotation, glm_rad(-90.0f),
+            glm_rotate(rotation, glm_rad(scene_gl_sailfish_rotation_angle(scene)),
                        (vec3){0.0f, 0.0f, 1.0f});
             shader_set_mat4(&scene->game_model_pick_shader, "u_rotate",
                             rotation);
@@ -367,7 +397,7 @@ void scene_gl_render(Scene *scene) {
 #ifdef SAILFISH
         {
             mat4 rotation = GLM_MAT4_IDENTITY_INIT;
-            glm_rotate(rotation, glm_rad(-90.0f),
+            glm_rotate(rotation, glm_rad(scene_gl_sailfish_rotation_angle(scene)),
                        (vec3){0.0f, 0.0f, 1.0f});
             glm_mat4_mul(rotation, scene->gl_projection_view, projection_view);
         }

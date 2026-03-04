@@ -53,6 +53,35 @@ static SDL_Surface *scene_load_surface(const char *file) {
 
     return surface;
 }
+
+#ifdef SAILFISH
+static float scene_gl_sailfish_rotation_angle(const Scene *scene) {
+    switch (scene->surface->mud->options->orientation) {
+    case OPTIONS_ORIENTATION_PORTRAIT:
+        return 0.0f;
+    case OPTIONS_ORIENTATION_LANDSCAPE_INVERTED:
+        return 90.0f;
+    case OPTIONS_ORIENTATION_LANDSCAPE:
+    default:
+        return -90.0f;
+    }
+}
+
+void scene_gl_apply_sailfish_rotation(Scene *scene) {
+    mat4 rotation = GLM_MAT4_IDENTITY_INIT;
+
+    glm_rotate(rotation, glm_rad(scene_gl_sailfish_rotation_angle(scene)),
+               (vec3){0.0f, 0.0f, 1.0f});
+
+    shader_use(&scene->game_model_shader);
+    shader_set_mat4(&scene->game_model_shader, "u_rotate", rotation);
+
+    shader_use(&scene->game_model_pick_shader);
+    shader_set_mat4(&scene->game_model_pick_shader, "u_rotate", rotation);
+
+    shader_use(&scene->game_model_shader);
+}
+#endif
 #endif
 
 #ifdef RENDER_SW
@@ -270,13 +299,14 @@ void scene_new(Scene *scene, Surface *surface, int model_count,
 
     shader_use(&scene->game_model_shader);
 
+#ifdef SAILFISH
+    scene_gl_apply_sailfish_rotation(scene);
+#else
     {
         mat4 rotation = GLM_MAT4_IDENTITY_INIT;
-#ifdef SAILFISH
-        glm_rotate(rotation, glm_rad(-90.0f), (vec3){0.0f, 0.0f, 1.0f});
-#endif
         shader_set_mat4(&scene->game_model_shader, "u_rotate", rotation);
     }
+#endif
 
     shader_set_int(&scene->game_model_shader, "model_textures", 0);
 

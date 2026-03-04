@@ -17,6 +17,20 @@ static unsigned int last_base_texture = 0;
 
 static void surface_gl_quad_new(Surface *surface, gl_quad *quad, int x, int y,
                                 int width, int height);
+
+#if defined(RENDER_GL) && defined(SAILFISH)
+static float surface_gl_sailfish_rotation_angle(const Surface *surface) {
+    switch (surface->mud->options->orientation) {
+    case OPTIONS_ORIENTATION_PORTRAIT:
+        return 0.0f;
+    case OPTIONS_ORIENTATION_LANDSCAPE_INVERTED:
+        return 90.0f;
+    case OPTIONS_ORIENTATION_LANDSCAPE:
+    default:
+        return -90.0f;
+    }
+}
+#endif
 #endif
 
 #if defined(RENDER_GL) || defined(RENDER_3DS_GL)
@@ -37,15 +51,16 @@ void surface_gl_new(Surface *surface, int width, int height, int limit,
     shader_new(&surface->gl_flat_shader, "./cache/flat.vs", "./cache/flat.fs");
 #endif
 
+#ifdef SAILFISH
+    surface_gl_apply_sailfish_rotation(surface);
+#else
     shader_use(&surface->gl_flat_shader);
 
     {
         mat4 rotation = GLM_MAT4_IDENTITY_INIT;
-#ifdef SAILFISH
-        glm_rotate(rotation, glm_rad(-90.0f), (vec3){0.0f, 0.0f, 1.0f});
-#endif
         shader_set_mat4(&surface->gl_flat_shader, "u_rotate", rotation);
     }
+#endif
 
     shader_set_int(&surface->gl_flat_shader, "sprite_texture", 0);
     shader_set_int(&surface->gl_flat_shader, "sprite_base_texture", 1);
@@ -144,6 +159,19 @@ float surface_gl_translate_x(Surface *surface, int x) {
 float surface_gl_translate_y(Surface *surface, int y) {
     return gl_translate_y(y, surface->height);
 }
+
+#if defined(RENDER_GL) && defined(SAILFISH)
+void surface_gl_apply_sailfish_rotation(Surface *surface) {
+    shader_use(&surface->gl_flat_shader);
+
+    {
+        mat4 rotation = GLM_MAT4_IDENTITY_INIT;
+        glm_rotate(rotation, glm_rad(surface_gl_sailfish_rotation_angle(surface)),
+                   (vec3){0.0f, 0.0f, 1.0f});
+        shader_set_mat4(&surface->gl_flat_shader, "u_rotate", rotation);
+    }
+}
+#endif
 
 void surface_gl_reset_context(Surface *surface) {
     surface->gl_flat_count = 0;
@@ -943,23 +971,47 @@ void surface_gl_raster_to_sprite(Surface *surface, int sprite_id, int x,
 #ifdef SAILFISH
             if (read_width != surface->mud->game_width ||
                 read_height != surface->mud->game_height) {
-                float scale_w = read_width / (float)surface->mud->game_height;
-                float scale_h = read_height / (float)surface->mud->game_width;
+                int orientation = surface->mud->options->orientation;
+                int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
+                float base_width =
+                    rotated ? (float)surface->mud->game_height
+                            : (float)surface->mud->game_width;
+                float base_height =
+                    rotated ? (float)surface->mud->game_width
+                            : (float)surface->mud->game_height;
+                float scale_w = read_width / base_width;
+                float scale_h = read_height / base_height;
                 float scale = scale_w < scale_h ? scale_w : scale_h;
 
-                int scaled_w = (int)(surface->mud->game_height * scale);
-                int scaled_h = (int)(surface->mud->game_width * scale);
+                int scaled_w = (int)(base_width * scale);
+                int scaled_h = (int)(base_height * scale);
 
                 int x_offset = (read_width - scaled_w) / 2;
                 int y_offset = (read_height - scaled_h) / 2;
 
-                int local_y =
-                    (int)((logical_x * (float)scaled_h) /
-                          surface->mud->game_width);
-                int local_x =
-                    (scaled_w - 1) -
-                    (int)((logical_y * (float)scaled_w) /
-                          surface->mud->game_height);
+                int local_x = 0;
+                int local_y = 0;
+
+                if (orientation == OPTIONS_ORIENTATION_LANDSCAPE_INVERTED) {
+                    local_x = (int)((logical_y * (float)scaled_w) /
+                                    surface->mud->game_height);
+                    local_y =
+                        (scaled_h - 1) -
+                        (int)((logical_x * (float)scaled_h) /
+                              surface->mud->game_width);
+                } else if (orientation == OPTIONS_ORIENTATION_PORTRAIT) {
+                    local_x = (int)((logical_x * (float)scaled_w) /
+                                    surface->mud->game_width);
+                    local_y = (int)((logical_y * (float)scaled_h) /
+                                    surface->mud->game_height);
+                } else {
+                    local_y = (int)((logical_x * (float)scaled_h) /
+                                    surface->mud->game_width);
+                    local_x =
+                        (scaled_w - 1) -
+                        (int)((logical_y * (float)scaled_w) /
+                              surface->mud->game_height);
+                }
 
                 src_x = x_offset + local_x;
                 src_y = y_offset + local_y;

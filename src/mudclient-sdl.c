@@ -32,12 +32,18 @@ static void sailfish_rotate_touch(mudclient *mud, int window_width,
         return;
     }
 
-    float scale_w = window_width / (float)mud->game_height;
-    float scale_h = window_height / (float)mud->game_width;
+    int orientation = mud->options->orientation;
+    int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
+
+    float base_width = rotated ? (float)mud->game_height : (float)mud->game_width;
+    float base_height = rotated ? (float)mud->game_width : (float)mud->game_height;
+
+    float scale_w = window_width / base_width;
+    float scale_h = window_height / base_height;
     float scale = scale_w < scale_h ? scale_w : scale_h;
 
-    int scaled_w = (int)(mud->game_height * scale);
-    int scaled_h = (int)(mud->game_width * scale);
+    int scaled_w = (int)(base_width * scale);
+    int scaled_h = (int)(base_height * scale);
 
     if (scaled_w <= 0 || scaled_h <= 0) {
         return;
@@ -61,12 +67,24 @@ static void sailfish_rotate_touch(mudclient *mud, int window_width,
         local_y = scaled_h - 1;
     }
 
-    int rotated_x = (local_y * mud->game_width) / scaled_h;
-    int rotated_y =
-        ((scaled_w - 1 - local_x) * mud->game_height) / scaled_w;
-
-    *touch_x = rotated_x;
-    *touch_y = rotated_y;
+    if (orientation == OPTIONS_ORIENTATION_LANDSCAPE_INVERTED) {
+        int rotated_x =
+            ((scaled_h - 1 - local_y) * mud->game_width) / scaled_h;
+        int rotated_y = (local_x * mud->game_height) / scaled_w;
+        *touch_x = rotated_x;
+        *touch_y = rotated_y;
+    } else if (orientation == OPTIONS_ORIENTATION_PORTRAIT) {
+        int mapped_x = (local_x * mud->game_width) / scaled_w;
+        int mapped_y = (local_y * mud->game_height) / scaled_h;
+        *touch_x = mapped_x;
+        *touch_y = mapped_y;
+    } else {
+        int rotated_x = (local_y * mud->game_width) / scaled_h;
+        int rotated_y =
+            ((scaled_w - 1 - local_x) * mud->game_height) / scaled_w;
+        *touch_x = rotated_x;
+        *touch_y = rotated_y;
+    }
 }
 
 static SDL_Window *sailfish_get_window(mudclient *mud) {

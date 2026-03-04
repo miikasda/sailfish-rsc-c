@@ -237,6 +237,9 @@ void surface_new(Surface *surface, int width, int height, int limit,
 float surface_gl_translate_x(Surface *surface, int x);
 float surface_gl_translate_y(Surface *surface, int y);
 void surface_gl_reset_context(Surface *surface);
+#if defined(RENDER_GL) && defined(SAILFISH)
+void surface_gl_apply_sailfish_rotation(Surface *surface);
+#endif
 void surface_gl_quad_apply_atlas(gl_quad *quad,
                                  gl_atlas_position atlas_position, int flip);
 void surface_gl_quad_apply_base_atlas(gl_quad *quad,
