@@ -5,8 +5,8 @@ open-source RuneScape Classic client port for Sailfish OS. Create your account
 at [https://rsc.vet](https://rsc.vet).
 
 <p align="center">
-    <img alt="Select device" src="./screenshot.png?"> &nbsp; &nbsp;
-</p>
+    <video src="./sailfish-media/gameplay.mp4" controls preload="metadata" style="max-width:100%; height:auto;"></video>
+  </p>
 
 > [!WARNING]  
 > This port was created with heavy utilization of OpenAI Codex.
