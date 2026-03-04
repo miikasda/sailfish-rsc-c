@@ -44,6 +44,7 @@ Warning:
 This port was created with heavy utilization of OpenAI Codex.
 
 Known issues:
+
 - While logging in, the login text flickers / changes rapidly
 - Wiki lookup does not work when sailjail is enabled
 
