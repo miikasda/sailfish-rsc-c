@@ -19,7 +19,6 @@ static mudclient *osk_mud = NULL;
 static int osk_initialized = 0;
 static GMutex osk_init_mutex;
 static char *osk_preedit = NULL;
-static int osk_orientation_angle = -1;
 static int osk_hide_pending = 0;
 static int osk_last_orientation = 0;
 static guint osk_show_timeout_id = 0;
@@ -80,26 +79,31 @@ static void sailfish_osk_update_widget_state(void) {
 }
 
 static int sailfish_osk_get_orientation_angle(mudclient *mud) {
-    if (osk_orientation_angle >= 0) {
-        return osk_orientation_angle;
-    }
-
     const char *env = getenv("SAILFISH_OSK_ANGLE");
     if (env != NULL && env[0] != '\0') {
         int angle = atoi(env);
         if (angle == 0 || angle == 90 || angle == 180 || angle == 270) {
-            osk_orientation_angle = angle;
-            return osk_orientation_angle;
+            return angle;
+        }
+    }
+
+    if (mud != NULL && mud->options != NULL) {
+        switch (mud->options->orientation) {
+        case OPTIONS_ORIENTATION_PORTRAIT:
+            return 0;
+        case OPTIONS_ORIENTATION_LANDSCAPE_INVERTED:
+            return 270;
+        case OPTIONS_ORIENTATION_LANDSCAPE:
+        default:
+            return 90;
         }
     }
 
     if (mud != NULL && mud->game_width >= mud->game_height) {
-        osk_orientation_angle = 90;
-    } else {
-        osk_orientation_angle = 0;
+        return 90;
     }
 
-    return osk_orientation_angle;
+    return 0;
 }
 
 static void sailfish_osk_send_text(const char *text) {

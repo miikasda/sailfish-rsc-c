@@ -289,6 +289,9 @@ void scene_set_light(Scene *scene, int ambience, int diffuse, int x, int y,
 void scene_gl_update_camera(Scene *scene);
 #endif
 #ifdef RENDER_GL
+#ifdef SAILFISH
+void scene_gl_apply_sailfish_rotation(Scene *scene);
+#endif
 void scene_gl_draw_game_model(Scene *scene, GameModel *game_model);
 void scene_gl_render(Scene *scene);
 void scene_gl_render_transparent_models(Scene *scene);

@@ -1189,12 +1189,14 @@ void mudclient_draw(mudclient *mud);
 void mudclient_sdl1_on_resize(mudclient *mud, int width, int height);
 #endif
 void mudclient_on_resize(mudclient *mud);
+void mudclient_rebuild_ui_tab_panels(mudclient *mud);
 void mudclient_poll_events(mudclient *mud);
 int mudclient_is_touch(mudclient *mud);
 void mudclient_trigger_keyboard(mudclient *mud, char *text, int is_password,
                                 int x, int y, int width, int height, int font,
                                 int is_centred);
 #ifdef SAILFISH
+void mudclient_sailfish_apply_orientation(mudclient *mud);
 void sailfish_osk_poll(mudclient *mud);
 void sailfish_osk_hide(void);
 #endif

@@ -5,6 +5,20 @@
 
 const char *option_tabs[] = {"Game", "Controls", "UI", "Bank"};
 
+#ifdef SAILFISH
+static const char *mudclient_sailfish_orientation_text(int orientation) {
+    switch (orientation) {
+    case OPTIONS_ORIENTATION_PORTRAIT:
+        return "Portrait";
+    case OPTIONS_ORIENTATION_LANDSCAPE_INVERTED:
+        return "Inverted";
+    case OPTIONS_ORIENTATION_LANDSCAPE:
+    default:
+        return "Landscape";
+    }
+}
+#endif
+
 static int mudclient_add_option_panel_label(Panel *panel, char *label, int x,
                                             int y);
 static int mudclient_add_option_panel_string(Panel *panel, char *label,
@@ -778,6 +792,32 @@ void mudclient_draw_additional_options(mudclient *mud) {
         panel_draw_panel(panel);
     }
 
+#ifdef SAILFISH
+    if (mud->options_tab == ADDITIONAL_OPTIONS_CONNECTION) {
+        int orientation_x = ui_x + 4 + ((ADDITIONAL_OPTIONS_WIDTH - 4) / 2);
+        int orientation_y =
+            ui_y + OPTION_HORIZ_GAP + ADDITIONAL_OPTIONS_TAB_HEIGHT + 4 +
+            (OPTION_HORIZ_GAP * 7);
+        int orientation_width = 150;
+        int orientation_colour = WHITE;
+        char orientation_text[64] = {0};
+
+        if (mud->mouse_x >= orientation_x &&
+            mud->mouse_x <= orientation_x + orientation_width &&
+            mud->mouse_y > orientation_y - 12 &&
+            mud->mouse_y < orientation_y + 4) {
+            orientation_colour = YELLOW;
+        }
+
+        snprintf(orientation_text, sizeof(orientation_text),
+                 "Screen rotation: %s",
+                 mudclient_sailfish_orientation_text(mud->options->orientation));
+
+        surface_draw_string(mud->surface, orientation_text, orientation_x,
+                            orientation_y, FONT_BOLD_12, orientation_colour);
+    }
+#endif
+
     mud->surface->draw_string_shadow = mud->logged_in ? 1 : 0;
 }
 
@@ -883,6 +923,45 @@ void mudclient_handle_additional_options_input(mudclient *mud) {
 #endif
             }
         }
+
+#ifdef SAILFISH
+        if (mud->options_tab == ADDITIONAL_OPTIONS_CONNECTION) {
+            int orientation_x = ui_x + 4 + ((ADDITIONAL_OPTIONS_WIDTH - 4) / 2);
+            int orientation_y =
+                ui_y + OPTION_HORIZ_GAP + ADDITIONAL_OPTIONS_TAB_HEIGHT + 4 +
+                (OPTION_HORIZ_GAP * 7);
+            int orientation_width = 150;
+
+            if (mud->mouse_x >= orientation_x &&
+                mud->mouse_x <= orientation_x + orientation_width &&
+                mud->mouse_y > orientation_y - 12 &&
+                mud->mouse_y < orientation_y + 4) {
+                mud->options->orientation++;
+
+                if (mud->options->orientation >
+                    OPTIONS_ORIENTATION_LANDSCAPE_INVERTED) {
+                    mud->options->orientation = OPTIONS_ORIENTATION_PORTRAIT;
+                }
+
+                mudclient_sailfish_apply_orientation(mud);
+
+#ifdef SDL12
+                mudclient_sdl1_on_resize(mud, mud->game_width, mud->game_height);
+#else
+                mudclient_on_resize(mud);
+#endif
+
+                mudclient_rebuild_ui_tab_panels(mud);
+                mudclient_rebuild_options_panels(mud);
+                mudclient_sync_options_panels(mud);
+
+#ifdef RENDER_GL
+                surface_gl_apply_sailfish_rotation(mud->surface);
+                scene_gl_apply_sailfish_rotation(mud->scene);
+#endif
+            }
+        }
+#endif
     }
 
     mud->last_mouse_button_down = 0;

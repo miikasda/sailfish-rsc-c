@@ -4,6 +4,43 @@
 #ifdef SAILFISH
 #include <SDL2/SDL_syswm.h>
 #include <wayland-client.h>
+
+static enum wl_output_transform
+mudclient_get_sailfish_transform(const mudclient *mud) {
+    switch (mud->options->orientation) {
+    case OPTIONS_ORIENTATION_PORTRAIT:
+        return WL_OUTPUT_TRANSFORM_NORMAL;
+    case OPTIONS_ORIENTATION_LANDSCAPE_INVERTED:
+        return WL_OUTPUT_TRANSFORM_90;
+    case OPTIONS_ORIENTATION_LANDSCAPE:
+    default:
+        return WL_OUTPUT_TRANSFORM_270;
+    }
+}
+
+void mudclient_sailfish_apply_orientation(mudclient *mud) {
+    SDL_Window *window = mud->window;
+
+#ifdef RENDER_GL
+    if (window == NULL) {
+        window = mud->gl_window;
+    }
+#endif
+
+    if (window == NULL) {
+        return;
+    }
+
+    SDL_SysWMinfo info;
+    SDL_VERSION(&info.version);
+
+    if (SDL_GetWindowWMInfo(window, &info) == SDL_TRUE &&
+        info.subsystem == SDL_SYSWM_WAYLAND && info.info.wl.surface != NULL) {
+        wl_surface_set_buffer_transform(info.info.wl.surface,
+                                        mudclient_get_sailfish_transform(mud));
+        wl_surface_commit(info.info.wl.surface);
+    }
+}
 #endif
 
 #ifdef __SWITCH__
@@ -226,16 +263,7 @@ void mudclient_start_application(mudclient *mud, char *title) {
         }
 
 #ifdef SAILFISH
-        SDL_SysWMinfo info;
-        SDL_VERSION(&info.version);
-        if (SDL_GetWindowWMInfo(mud->window, &info) == SDL_TRUE &&
-            info.subsystem == SDL_SYSWM_WAYLAND &&
-            info.info.wl.surface != NULL) {
-            /* Sailfish OS: tell the compositor our buffer is landscape. */
-            wl_surface_set_buffer_transform(info.info.wl.surface,
-                                            WL_OUTPUT_TRANSFORM_270);
-            wl_surface_commit(info.info.wl.surface);
-        }
+        mudclient_sailfish_apply_orientation(mud);
 #endif
 
         #ifndef RENDER_GL
