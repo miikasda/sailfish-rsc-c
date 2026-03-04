@@ -5,11 +5,11 @@
 
 Name:       rsc-c
 Summary:    RuneScape Classic Sailfish OS port
-Version:    0.1.3
+Version:    0.2.0
 Release:    1
 Group:      Applications/Games
 License:    AGPLv3
-URL:        https://github.com/2003scape/rsc-c
+URL:        https://github.com/miikasda/sailfish-rsc-c
 Source0:    %{name}-%{version}.tar.bz2
 
 # Build toggles:
@@ -60,7 +60,7 @@ Custom:
   Repo: https://github.com/miikasda/sailfish-rsc-c
 PackageIcon: https://github.com/miikasda/sailfish-rsc-c/raw/sailfish/web/icon.png
 Screenshots:
- - https://github.com/miikasda/sailfish-rsc-c/raw/sailfish/screenshot.png
+ - https://github.com/miikasda/sailfish-rsc-c/raw/sailfish/sailfish-media/screenshot.png
 Links:
   Homepage: https://github.com/miikasda/sailfish-rsc-c
   Bugtracker: https://github.com/miikasda/sailfish-rsc-c/issues
