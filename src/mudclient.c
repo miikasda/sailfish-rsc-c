@@ -242,6 +242,32 @@ void mudclient_resize(mudclient *mud) {
                              0x00ff00, 0x0000ff, 0);
 
     if (mud->surface != NULL) {
+#ifdef SAILFISH
+        int restore_existing_login =
+            mud->login_screen == LOGIN_STAGE_EXISTING &&
+            mud->panel_login_existing_user != NULL;
+        char resize_login_username[PANEL_MAX_TEXT_LEN] = {0};
+        char resize_login_password[PANEL_MAX_TEXT_LEN] = {0};
+        int resize_existing_focus = 0;
+
+        if (restore_existing_login) {
+            snprintf(resize_login_username, sizeof(resize_login_username), "%s",
+                     panel_get_text(mud->panel_login_existing_user,
+                                    mud->control_login_username));
+            snprintf(resize_login_password, sizeof(resize_login_password), "%s",
+                     panel_get_text(mud->panel_login_existing_user,
+                                    mud->control_login_password));
+
+            if (mud->panel_login_existing_user->focus_control_index ==
+                mud->control_login_username) {
+                resize_existing_focus = 1;
+            } else if (mud->panel_login_existing_user->focus_control_index ==
+                       mud->control_login_password) {
+                resize_existing_focus = 2;
+            }
+        }
+#endif
+
 #ifdef RENDER_SW
         mud->surface->pixels = mud->pixel_surface->pixels;
 #endif
@@ -268,6 +294,25 @@ void mudclient_resize(mudclient *mud) {
         worldlist_new(mud);
 
         mudclient_create_login_panels(mud);
+
+#ifdef SAILFISH
+        if (restore_existing_login) {
+            panel_update_text(mud->panel_login_existing_user,
+                              mud->control_login_username,
+                              resize_login_username);
+            panel_update_text(mud->panel_login_existing_user,
+                              mud->control_login_password,
+                              resize_login_password);
+
+            if (resize_existing_focus == 1) {
+                mud->panel_login_existing_user->focus_control_index =
+                    mud->control_login_username;
+            } else if (resize_existing_focus == 2) {
+                mud->panel_login_existing_user->focus_control_index =
+                    mud->control_login_password;
+            }
+        }
+#endif
 
         panel_destroy(mud->panel_appearance);
         free(mud->panel_appearance);
