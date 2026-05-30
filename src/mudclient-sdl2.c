@@ -5,6 +5,117 @@
 #include <SDL2/SDL_syswm.h>
 #include <wayland-client.h>
 
+#ifndef SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION
+#define SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION                                 \
+    "SDL_QTWAYLAND_CONTENT_ORIENTATION"
+#endif
+
+static int mudclient_sailfish_parse_version(const char *text, int *major,
+                                            int *minor) {
+    const char *p = text;
+
+    while (*p != '\0' && !isdigit((unsigned char)*p)) {
+        p++;
+    }
+
+    if (*p == '\0') {
+        return 0;
+    }
+
+    *major = atoi(p);
+
+    while (isdigit((unsigned char)*p)) {
+        p++;
+    }
+
+    if (*p != '.') {
+        *minor = 0;
+        return 1;
+    }
+
+    p++;
+    *minor = atoi(p);
+
+    return 1;
+}
+
+static int mudclient_sailfish_read_version_file(const char *path,
+                                                int allow_any_line,
+                                                int *major, int *minor) {
+    FILE *file = fopen(path, "r");
+
+    if (file == NULL) {
+        return 0;
+    }
+
+    char line[256];
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        if ((allow_any_line || strncmp(line, "VERSION_ID=", 11) == 0) &&
+            mudclient_sailfish_parse_version(line, major, minor)) {
+            fclose(file);
+            return 1;
+        }
+    }
+
+    fclose(file);
+    return 0;
+}
+
+static int mudclient_sailfish_is_5_1_or_newer(void) {
+    int major = 0;
+    int minor = 0;
+
+    if (!mudclient_sailfish_read_version_file("/etc/os-release", 0, &major,
+                                              &minor) &&
+        !mudclient_sailfish_read_version_file("/usr/lib/os-release", 0,
+                                              &major, &minor) &&
+        !mudclient_sailfish_read_version_file("/etc/sailfish-release", 1,
+                                              &major, &minor)) {
+        return 0;
+    }
+
+    return major > 5 || (major == 5 && minor >= 1);
+}
+
+static int mudclient_sailfish_use_legacy_orientation(void) {
+    static int use_legacy = -1;
+
+    if (use_legacy < 0) {
+        const char *mode = getenv("RSC_SAILFISH_ORIENTATION");
+
+        if (mode != NULL && strcmp(mode, "hint") == 0) {
+            use_legacy = 0;
+        } else if (mode != NULL && strcmp(mode, "legacy") == 0) {
+            use_legacy = 1;
+        } else {
+            /* SFOS < 5.1 needs the direct Wayland buffer-transform path. */
+            use_legacy = !mudclient_sailfish_is_5_1_or_newer();
+        }
+    }
+
+    return use_legacy;
+}
+
+static const char *mudclient_sailfish_content_orientation(const mudclient *mud) {
+    switch (mud->options->orientation) {
+    case OPTIONS_ORIENTATION_PORTRAIT:
+        return "portrait";
+    case OPTIONS_ORIENTATION_LANDSCAPE_INVERTED:
+        return "inverted-landscape";
+    case OPTIONS_ORIENTATION_LANDSCAPE:
+    default:
+        return "landscape";
+    }
+}
+
+static void mudclient_sailfish_set_orientation_hint(mudclient *mud) {
+    if (!mudclient_sailfish_use_legacy_orientation()) {
+        SDL_SetHint(SDL_HINT_QTWAYLAND_CONTENT_ORIENTATION,
+                    mudclient_sailfish_content_orientation(mud));
+    }
+}
+
 static enum wl_output_transform
 mudclient_get_sailfish_transform(const mudclient *mud) {
     switch (mud->options->orientation) {
@@ -19,6 +130,11 @@ mudclient_get_sailfish_transform(const mudclient *mud) {
 }
 
 void mudclient_sailfish_apply_orientation(mudclient *mud) {
+    if (!mudclient_sailfish_use_legacy_orientation()) {
+        mudclient_sailfish_set_orientation_hint(mud);
+        return;
+    }
+
     SDL_Window *window = mud->window;
 
 #ifdef RENDER_GL
@@ -242,6 +358,10 @@ void mudclient_start_application(mudclient *mud, char *title) {
     // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 #endif /* EMSCRIPTEN */
 #endif /* RENDER_GL */
+
+#ifdef SAILFISH
+    mudclient_sailfish_set_orientation_hint(mud);
+#endif
 
     mud->window =
         SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
