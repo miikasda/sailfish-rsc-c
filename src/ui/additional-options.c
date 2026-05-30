@@ -26,6 +26,9 @@ static int mudclient_add_option_panel_string(Panel *panel, char *label,
                                              int x, int y);
 static int mudclient_add_option_panel_checkbox(Panel *panel, char *label,
                                                int is_checked, int x, int y);
+static void mudclient_update_option_panel_offset(Panel *panel, int ui_x,
+                                                 int ui_y);
+static void mudclient_update_options_panel_offsets(mudclient *mud);
 
 static int mudclient_add_option_panel_label(Panel *panel, char *label, int x,
                                             int y) {
@@ -56,6 +59,31 @@ static int mudclient_add_option_panel_checkbox(Panel *panel, char *label,
     panel_toggle_checkbox(panel, control, is_checked);
 
     return control;
+}
+
+static void mudclient_update_option_panel_offset(Panel *panel, int ui_x,
+                                                 int ui_y) {
+    if (panel == NULL || panel->control_count <= 0) {
+        return;
+    }
+
+    int content_x = ui_x + 4;
+    int content_y =
+        ui_y + OPTION_HORIZ_GAP + ADDITIONAL_OPTIONS_TAB_HEIGHT + 4;
+
+    panel->offset_x = content_x - panel->control_x[0];
+    panel->offset_y = content_y - panel->control_y[0];
+}
+
+static void mudclient_update_options_panel_offsets(mudclient *mud) {
+    int ui_x = mud->surface->width / 2 - ADDITIONAL_OPTIONS_WIDTH / 2;
+    int ui_y = (mud->surface->height / 2) - ADDITIONAL_OPTIONS_HEIGHT / 2;
+
+    mudclient_update_option_panel_offset(mud->panel_game_options, ui_x, ui_y);
+    mudclient_update_option_panel_offset(mud->panel_control_options, ui_x,
+                                         ui_y);
+    mudclient_update_option_panel_offset(mud->panel_ui_options, ui_x, ui_y);
+    mudclient_update_option_panel_offset(mud->panel_bank_options, ui_x, ui_y);
 }
 
 void mudclient_create_options_panel(mudclient *mud) {
@@ -722,6 +750,8 @@ void mudclient_draw_additional_options(mudclient *mud) {
 
     int ui_y = mud->surface->height / 2 - ADDITIONAL_OPTIONS_HEIGHT / 2;
 
+    mudclient_update_options_panel_offsets(mud);
+
     surface_draw_box(mud->surface, ui_x, ui_y, ADDITIONAL_OPTIONS_WIDTH, 12,
                      TITLE_BAR_COLOUR);
 
@@ -824,6 +854,8 @@ void mudclient_draw_additional_options(mudclient *mud) {
 void mudclient_handle_additional_options_input(mudclient *mud) {
     int ui_x = mud->surface->width / 2 - ADDITIONAL_OPTIONS_WIDTH / 2;
     int ui_y = mud->surface->height / 2 - ADDITIONAL_OPTIONS_HEIGHT / 2;
+
+    mudclient_update_options_panel_offsets(mud);
 
     /* tabs */
     if (mud->last_mouse_button_down == 1 && mud->mouse_x >= ui_x &&
