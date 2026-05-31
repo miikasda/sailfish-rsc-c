@@ -100,6 +100,37 @@ static void sailfish_on_app_deactivated(void) {
     // Prevent OSK from leaking into other apps when this app loses focus.
     sailfish_osk_hide();
 }
+
+static int sailfish_restore_osk_window(mudclient *mud) {
+    if (mud == NULL || mud->options == NULL ||
+        mud->options->orientation == OPTIONS_ORIENTATION_PORTRAIT ||
+        !sailfish_osk_is_visible()) {
+        return 0;
+    }
+
+    int osk_width = -1;
+    int osk_height = -1;
+    if (!sailfish_osk_get_window_size(mud, &osk_width, &osk_height)) {
+        return 0;
+    }
+
+    SDL_Window *window = sailfish_get_window(mud);
+    if (window == NULL) {
+        return 1;
+    }
+
+    int window_width = -1;
+    int window_height = -1;
+    SDL_GetWindowSize(window, &window_width, &window_height);
+
+    if (window_width != osk_width || window_height != osk_height) {
+        SDL_SetWindowPosition(window, 0, 0);
+        SDL_SetWindowSize(window, osk_width, osk_height);
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    }
+
+    return 1;
+}
 #endif
 
 void mudclient_poll_events(mudclient *mud) {
@@ -655,6 +686,13 @@ void mudclient_poll_events(mudclient *mud) {
             break;
 #else
         case SDL_WINDOWEVENT:
+#ifdef SAILFISH
+            if ((event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
+                 event.window.event == SDL_WINDOWEVENT_RESIZED) &&
+                sailfish_restore_osk_window(mud)) {
+                break;
+            }
+#endif
             if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                 mudclient_on_resize(mud);
 #ifdef SAILFISH

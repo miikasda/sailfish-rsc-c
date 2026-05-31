@@ -2794,6 +2794,7 @@ static void sailfish_map_rect_to_window(mudclient *mud, int tl_x, int tl_y,
     int window_width = 0;
     int window_height = 0;
     SDL_GetWindowSize(window, &window_width, &window_height);
+    sailfish_osk_get_window_size(mud, &window_width, &window_height);
 
     if (window_width <= 0 || window_height <= 0 || mud->game_width <= 0 ||
         mud->game_height <= 0) {
@@ -2908,6 +2909,9 @@ void mudclient_gl_get_viewport(mudclient *mud, int x, int y, int width,
     int window_width = 0;
     int window_height = 0;
     SDL_GetWindowSize(window, &window_width, &window_height);
+#ifdef SAILFISH
+    sailfish_osk_get_window_size(mud, &window_width, &window_height);
+#endif
 
 #ifdef SAILFISH
     if (window_width > 0 && window_height > 0 && mud->game_width > 0 &&
@@ -2959,6 +2963,7 @@ void mudclient_gl_scissor(mudclient *mud, int x, int y, int width,
 
     if (window != NULL) {
         SDL_GetWindowSize(window, &window_width, &window_height);
+        sailfish_osk_get_window_size(mud, &window_width, &window_height);
     }
 
     if (window_width > 0 && window_height > 0 && mud->game_width > 0 &&

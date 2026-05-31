@@ -23,6 +23,53 @@ static int osk_hide_pending = 0;
 static int osk_last_orientation = 0;
 static guint osk_show_timeout_id = 0;
 static int osk_first_show = 1;
+static int osk_visible = 0;
+static int osk_window_width = 0;
+static int osk_window_height = 0;
+
+static void sailfish_osk_capture_window_size(mudclient *mud) {
+    if ((osk_visible || osk_show_timeout_id != 0) && osk_window_width > 0 &&
+        osk_window_height > 0) {
+        return;
+    }
+
+    osk_window_width = 0;
+    osk_window_height = 0;
+
+#ifdef SDL2
+    SDL_Window *window = NULL;
+
+    if (mud != NULL) {
+#ifdef RENDER_GL
+        window = mud->gl_window != NULL ? mud->gl_window : mud->window;
+#else
+        window = mud->window;
+#endif
+    }
+
+    if (window != NULL) {
+        SDL_GetWindowSize(window, &osk_window_width, &osk_window_height);
+    }
+
+    if (mud != NULL && mud->options != NULL &&
+        mud->options->orientation != OPTIONS_ORIENTATION_PORTRAIT) {
+        SDL_DisplayMode mode;
+        if (SDL_GetDesktopDisplayMode(0, &mode) == 0 && mode.w > 0 &&
+            mode.h > 0) {
+            int same_desktop_size =
+                (osk_window_width == mode.w && osk_window_height == mode.h) ||
+                (osk_window_width == mode.h && osk_window_height == mode.w);
+
+            if (!same_desktop_size) {
+                osk_window_width = mode.w < mode.h ? mode.w : mode.h;
+                osk_window_height = mode.w < mode.h ? mode.h : mode.w;
+            }
+        }
+    }
+#else
+    (void)mud;
+#endif
+}
 
 static void sailfish_osk_reset_input_method(void) {
     if (osk_server == NULL) {
@@ -339,16 +386,39 @@ static gboolean sailfish_osk_show_delayed(gpointer data) {
     return G_SOURCE_REMOVE;
 }
 
+int sailfish_osk_is_visible(void) {
+    return osk_visible || osk_show_timeout_id != 0;
+}
+
+int sailfish_osk_get_window_size(mudclient *mud, int *width, int *height) {
+    if (mud == NULL || mud->options == NULL ||
+        mud->options->orientation == OPTIONS_ORIENTATION_PORTRAIT ||
+        !sailfish_osk_is_visible() || osk_window_width <= 0 ||
+        osk_window_height <= 0) {
+        return 0;
+    }
+
+    *width = osk_window_width;
+    *height = osk_window_height;
+    return 1;
+}
+
 void sailfish_osk_show(mudclient *mud, const char *text, int is_password) {
     (void)text;
     (void)is_password;
 
     osk_mud = mud;
+    sailfish_osk_capture_window_size(mud);
     sailfish_osk_init();
 
     if (osk_server == NULL) {
+        osk_visible = 0;
+        osk_window_width = 0;
+        osk_window_height = 0;
         return;
     }
+
+    osk_visible = 1;
 
     // Recover from stale input-method state where Enter can be disabled.
     sailfish_osk_reset_input_method();
@@ -395,6 +465,10 @@ void sailfish_osk_show(mudclient *mud, const char *text, int is_password) {
 }
 
 void sailfish_osk_hide(void) {
+    osk_visible = 0;
+    osk_window_width = 0;
+    osk_window_height = 0;
+
     if (osk_server == NULL) {
         return;
     }
@@ -433,6 +507,15 @@ void sailfish_osk_show(mudclient *mud, const char *text, int is_password) {
 }
 
 void sailfish_osk_hide(void) {}
+
+int sailfish_osk_is_visible(void) { return 0; }
+
+int sailfish_osk_get_window_size(mudclient *mud, int *width, int *height) {
+    (void)mud;
+    (void)width;
+    (void)height;
+    return 0;
+}
 
 void sailfish_osk_poll(mudclient *mud) { (void)mud; }
 
