@@ -56,6 +56,12 @@ static SDL_Surface *scene_load_surface(const char *file) {
 
 #ifdef SAILFISH
 static float scene_gl_sailfish_rotation_angle(const Scene *scene) {
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        return 0.0f;
+    }
+#endif
+
     switch (scene->surface->mud->options->orientation) {
     case OPTIONS_ORIENTATION_PORTRAIT:
         return 0.0f;

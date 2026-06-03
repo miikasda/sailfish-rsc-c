@@ -242,6 +242,32 @@ void mudclient_resize(mudclient *mud) {
                              0x00ff00, 0x0000ff, 0);
 
     if (mud->surface != NULL) {
+#ifdef SAILFISH
+        int restore_existing_login =
+            mud->login_screen == LOGIN_STAGE_EXISTING &&
+            mud->panel_login_existing_user != NULL;
+        char resize_login_username[PANEL_MAX_TEXT_LEN] = {0};
+        char resize_login_password[PANEL_MAX_TEXT_LEN] = {0};
+        int resize_existing_focus = 0;
+
+        if (restore_existing_login) {
+            snprintf(resize_login_username, sizeof(resize_login_username), "%s",
+                     panel_get_text(mud->panel_login_existing_user,
+                                    mud->control_login_username));
+            snprintf(resize_login_password, sizeof(resize_login_password), "%s",
+                     panel_get_text(mud->panel_login_existing_user,
+                                    mud->control_login_password));
+
+            if (mud->panel_login_existing_user->focus_control_index ==
+                mud->control_login_username) {
+                resize_existing_focus = 1;
+            } else if (mud->panel_login_existing_user->focus_control_index ==
+                       mud->control_login_password) {
+                resize_existing_focus = 2;
+            }
+        }
+#endif
+
 #ifdef RENDER_SW
         mud->surface->pixels = mud->pixel_surface->pixels;
 #endif
@@ -268,6 +294,25 @@ void mudclient_resize(mudclient *mud) {
         worldlist_new(mud);
 
         mudclient_create_login_panels(mud);
+
+#ifdef SAILFISH
+        if (restore_existing_login) {
+            panel_update_text(mud->panel_login_existing_user,
+                              mud->control_login_username,
+                              resize_login_username);
+            panel_update_text(mud->panel_login_existing_user,
+                              mud->control_login_password,
+                              resize_login_password);
+
+            if (resize_existing_focus == 1) {
+                mud->panel_login_existing_user->focus_control_index =
+                    mud->control_login_username;
+            } else if (resize_existing_focus == 2) {
+                mud->panel_login_existing_user->focus_control_index =
+                    mud->control_login_password;
+            }
+        }
+#endif
 
         panel_destroy(mud->panel_appearance);
         free(mud->panel_appearance);
@@ -2680,16 +2725,29 @@ void mudclient_update_fov(mudclient *mud) {
 }
 #endif
 
-#ifdef RENDER_GL
 #ifdef SAILFISH
-static void sailfish_get_render_base_size(const mudclient *mud, float *base_w,
-                                          float *base_h) {
+static int sailfish_effective_orientation(const mudclient *mud) {
     int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
 
     if (mud->options != NULL) {
         orientation = mud->options->orientation;
     }
 
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        orientation = OPTIONS_ORIENTATION_PORTRAIT;
+    }
+#endif
+
+    return orientation;
+}
+#endif
+
+#ifdef RENDER_GL
+#ifdef SAILFISH
+static void sailfish_get_render_base_size(const mudclient *mud, float *base_w,
+                                          float *base_h) {
+    int orientation = sailfish_effective_orientation(mud);
     int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
 
     *base_w = rotated ? (float)mud->game_height : (float)mud->game_width;
@@ -2701,12 +2759,7 @@ static void sailfish_map_game_point_to_window(const mudclient *mud, int scaled_w
                                               int y_offset, int game_x,
                                               int game_y, float *out_x,
                                               float *out_y) {
-    int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
-
-    if (mud->options != NULL) {
-        orientation = mud->options->orientation;
-    }
-
+    int orientation = sailfish_effective_orientation(mud);
     float local_x = 0.0f;
     float local_y = 0.0f;
 
@@ -2749,6 +2802,7 @@ static void sailfish_map_rect_to_window(mudclient *mud, int tl_x, int tl_y,
     int window_width = 0;
     int window_height = 0;
     SDL_GetWindowSize(window, &window_width, &window_height);
+    sailfish_osk_get_window_size(mud, &window_width, &window_height);
 
     if (window_width <= 0 || window_height <= 0 || mud->game_width <= 0 ||
         mud->game_height <= 0) {
@@ -2863,6 +2917,9 @@ void mudclient_gl_get_viewport(mudclient *mud, int x, int y, int width,
     int window_width = 0;
     int window_height = 0;
     SDL_GetWindowSize(window, &window_width, &window_height);
+#ifdef SAILFISH
+    sailfish_osk_get_window_size(mud, &window_width, &window_height);
+#endif
 
 #ifdef SAILFISH
     if (window_width > 0 && window_height > 0 && mud->game_width > 0 &&
@@ -2914,6 +2971,7 @@ void mudclient_gl_scissor(mudclient *mud, int x, int y, int width,
 
     if (window != NULL) {
         SDL_GetWindowSize(window, &window_width, &window_height);
+        sailfish_osk_get_window_size(mud, &window_width, &window_height);
     }
 
     if (window_width > 0 && window_height > 0 && mud->game_width > 0 &&
@@ -5485,12 +5543,7 @@ void mudclient_on_resize(mudclient *mud) {
         int window_h = new_height;
 
         if (window_w > 0 && window_h > 0) {
-            int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
-
-            if (mud->options != NULL) {
-                orientation = mud->options->orientation;
-            }
-
+            int orientation = sailfish_effective_orientation(mud);
             int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
             float target_aspect =
                 rotated ? (window_h / (float)window_w)

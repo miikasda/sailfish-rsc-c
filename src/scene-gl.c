@@ -68,6 +68,12 @@ void scene_gl_update_camera(Scene *scene) {
 #ifdef RENDER_GL
 #ifdef SAILFISH
 static float scene_gl_sailfish_rotation_angle(Scene *scene) {
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        return 0.0f;
+    }
+#endif
+
     switch (scene->surface->mud->options->orientation) {
     case OPTIONS_ORIENTATION_PORTRAIT:
         return 0.0f;
@@ -108,6 +114,11 @@ static void scene_gl_get_mouse_pixels(Scene *scene, int game_x, int game_y,
             }
 
             int orientation = scene->surface->mud->options->orientation;
+#ifdef SDL2
+            if (mudclient_sailfish_uses_xdg_window_rotation()) {
+                orientation = OPTIONS_ORIENTATION_PORTRAIT;
+            }
+#endif
             int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
             float base_width = rotated ? (float)game_height : (float)game_width;
             float base_height = rotated ? (float)game_width : (float)game_height;

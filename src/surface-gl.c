@@ -20,6 +20,12 @@ static void surface_gl_quad_new(Surface *surface, gl_quad *quad, int x, int y,
 
 #if defined(RENDER_GL) && defined(SAILFISH)
 static float surface_gl_sailfish_rotation_angle(const Surface *surface) {
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        return 0.0f;
+    }
+#endif
+
     switch (surface->mud->options->orientation) {
     case OPTIONS_ORIENTATION_PORTRAIT:
         return 0.0f;
@@ -972,6 +978,11 @@ void surface_gl_raster_to_sprite(Surface *surface, int sprite_id, int x,
             if (read_width != surface->mud->game_width ||
                 read_height != surface->mud->game_height) {
                 int orientation = surface->mud->options->orientation;
+#ifdef SDL2
+                if (mudclient_sailfish_uses_xdg_window_rotation()) {
+                    orientation = OPTIONS_ORIENTATION_PORTRAIT;
+                }
+#endif
                 int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
                 float base_width =
                     rotated ? (float)surface->mud->game_height

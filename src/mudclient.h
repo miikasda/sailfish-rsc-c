@@ -1197,8 +1197,16 @@ void mudclient_trigger_keyboard(mudclient *mud, char *text, int is_password,
                                 int is_centred);
 #ifdef SAILFISH
 void mudclient_sailfish_apply_orientation(mudclient *mud);
+#ifdef SDL2
+int mudclient_sailfish_supports_xdg_window_rotation(void);
+int mudclient_sailfish_get_xdg_window_rotation(void);
+int mudclient_sailfish_set_xdg_window_rotation(int enabled);
+int mudclient_sailfish_uses_xdg_window_rotation(void);
+#endif
 void sailfish_osk_poll(mudclient *mud);
 void sailfish_osk_hide(void);
+int sailfish_osk_is_visible(void);
+int sailfish_osk_get_window_size(mudclient *mud, int *width, int *height);
 #endif
 #ifdef _3DS
 void mudclient_3ds_flush_audio(mudclient *mud);
