@@ -52,7 +52,8 @@ static void sailfish_osk_capture_window_size(mudclient *mud) {
     }
 
     if (mud != NULL && mud->options != NULL &&
-        mud->options->orientation != OPTIONS_ORIENTATION_PORTRAIT) {
+        mud->options->orientation != OPTIONS_ORIENTATION_PORTRAIT &&
+        !mudclient_sailfish_uses_xdg_window_rotation()) {
         SDL_DisplayMode mode;
         if (SDL_GetDesktopDisplayMode(0, &mode) == 0 && mode.w > 0 &&
             mode.h > 0) {
@@ -133,6 +134,67 @@ static int sailfish_osk_get_orientation_angle(mudclient *mud) {
             return angle;
         }
     }
+
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        int window_width = 0;
+        int window_height = 0;
+
+        if (mud != NULL) {
+            SDL_Window *window = NULL;
+#ifdef RENDER_GL
+            window = mud->gl_window != NULL ? mud->gl_window : mud->window;
+#else
+            window = mud->window;
+#endif
+
+            if (window != NULL) {
+                SDL_GetWindowSize(window, &window_width, &window_height);
+            }
+        }
+
+#ifdef SDL_VERSION_ATLEAST
+#if SDL_VERSION_ATLEAST(2, 0, 9)
+        int display_orientation = SDL_GetDisplayOrientation(0);
+
+        switch (display_orientation) {
+        case SDL_ORIENTATION_LANDSCAPE:
+            if (window_height <= window_width) {
+                return 270;
+            }
+            break;
+        case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
+            if (window_height <= window_width) {
+                return 90;
+            }
+            break;
+        case SDL_ORIENTATION_PORTRAIT_FLIPPED:
+            if (window_width <= window_height) {
+                return 180;
+            }
+            break;
+        case SDL_ORIENTATION_PORTRAIT:
+            if (window_width <= window_height) {
+                return 0;
+            }
+            break;
+        default:
+            break;
+        }
+#endif
+#endif
+
+        if (window_width > window_height) {
+            if (osk_last_orientation == 90 || osk_last_orientation == 270) {
+                return osk_last_orientation;
+            }
+
+            return 270;
+        }
+
+        return 0;
+    }
+#endif
 
     if (mud != NULL && mud->options != NULL) {
         switch (mud->options->orientation) {
@@ -374,6 +436,24 @@ static gboolean sailfish_osk_show_delayed(gpointer data) {
 
     if (osk_server != NULL) {
         GError *error = NULL;
+
+#ifdef SDL2
+        if (mudclient_sailfish_uses_xdg_window_rotation()) {
+            int angle = sailfish_osk_get_orientation_angle(osk_mud);
+            osk_last_orientation = angle;
+
+            if (!maliit_server_call_app_orientation_about_to_change_sync(
+                    osk_server, angle, NULL, &error)) {
+                g_clear_error(&error);
+            }
+
+            if (!maliit_server_call_app_orientation_changed_sync(
+                    osk_server, angle, NULL, &error)) {
+                g_clear_error(&error);
+            }
+        }
+#endif
+
         if (!maliit_server_call_show_input_method_sync(osk_server, NULL,
                                                        &error)) {
             fprintf(stderr, "SAILFISH OSK: show_input_method failed: %s\n",
@@ -391,6 +471,19 @@ int sailfish_osk_is_visible(void) {
 }
 
 int sailfish_osk_get_window_size(mudclient *mud, int *width, int *height) {
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        if (!sailfish_osk_is_visible() || osk_window_width <= 0 ||
+            osk_window_height <= 0 || osk_window_width <= osk_window_height) {
+            return 0;
+        }
+
+        *width = osk_window_width;
+        *height = osk_window_height;
+        return 1;
+    }
+#endif
+
     if (mud == NULL || mud->options == NULL ||
         mud->options->orientation == OPTIONS_ORIENTATION_PORTRAIT ||
         !sailfish_osk_is_visible() || osk_window_width <= 0 ||

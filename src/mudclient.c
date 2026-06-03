@@ -2725,16 +2725,29 @@ void mudclient_update_fov(mudclient *mud) {
 }
 #endif
 
-#ifdef RENDER_GL
 #ifdef SAILFISH
-static void sailfish_get_render_base_size(const mudclient *mud, float *base_w,
-                                          float *base_h) {
+static int sailfish_effective_orientation(const mudclient *mud) {
     int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
 
     if (mud->options != NULL) {
         orientation = mud->options->orientation;
     }
 
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        orientation = OPTIONS_ORIENTATION_PORTRAIT;
+    }
+#endif
+
+    return orientation;
+}
+#endif
+
+#ifdef RENDER_GL
+#ifdef SAILFISH
+static void sailfish_get_render_base_size(const mudclient *mud, float *base_w,
+                                          float *base_h) {
+    int orientation = sailfish_effective_orientation(mud);
     int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
 
     *base_w = rotated ? (float)mud->game_height : (float)mud->game_width;
@@ -2746,12 +2759,7 @@ static void sailfish_map_game_point_to_window(const mudclient *mud, int scaled_w
                                               int y_offset, int game_x,
                                               int game_y, float *out_x,
                                               float *out_y) {
-    int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
-
-    if (mud->options != NULL) {
-        orientation = mud->options->orientation;
-    }
-
+    int orientation = sailfish_effective_orientation(mud);
     float local_x = 0.0f;
     float local_y = 0.0f;
 
@@ -5535,12 +5543,7 @@ void mudclient_on_resize(mudclient *mud) {
         int window_h = new_height;
 
         if (window_w > 0 && window_h > 0) {
-            int orientation = OPTIONS_ORIENTATION_LANDSCAPE;
-
-            if (mud->options != NULL) {
-                orientation = mud->options->orientation;
-            }
-
+            int orientation = sailfish_effective_orientation(mud);
             int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
             float target_aspect =
                 rotated ? (window_h / (float)window_w)

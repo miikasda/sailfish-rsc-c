@@ -19,6 +19,16 @@ static const char *mudclient_sailfish_orientation_text(int orientation) {
 }
 #endif
 
+#if defined(SAILFISH) && defined(SDL2)
+static void mudclient_sailfish_xdg_rotation_bounds(int ui_x, int ui_y, int *x,
+                                                   int *y, int *width) {
+    *x = ui_x + 4;
+    *y = ui_y + OPTION_HORIZ_GAP + ADDITIONAL_OPTIONS_TAB_HEIGHT + 4 +
+         (OPTION_HORIZ_GAP * 7);
+    *width = 150;
+}
+#endif
+
 static int mudclient_add_option_panel_label(Panel *panel, char *label, int x,
                                             int y);
 static int mudclient_add_option_panel_string(Panel *panel, char *label,
@@ -848,6 +858,38 @@ void mudclient_draw_additional_options(mudclient *mud) {
     }
 #endif
 
+#if defined(SAILFISH) && defined(SDL2)
+    if (mud->options_tab == ADDITIONAL_OPTIONS_CONNECTION &&
+        mudclient_sailfish_supports_xdg_window_rotation()) {
+        int rotation_x = 0;
+        int rotation_y = 0;
+        int rotation_width = 0;
+        int rotation_colour = WHITE;
+        char rotation_text[64] = {0};
+
+        mudclient_sailfish_xdg_rotation_bounds(
+            ui_x, ui_y, &rotation_x, &rotation_y, &rotation_width);
+
+        if (mud->mouse_x >= rotation_x &&
+            mud->mouse_x <= rotation_x + rotation_width &&
+            mud->mouse_y > rotation_y - 12 &&
+            mud->mouse_y < rotation_y + 4) {
+            rotation_colour = YELLOW;
+        }
+
+        snprintf(rotation_text, sizeof(rotation_text), "SFOS auto rotate: %s",
+                 mudclient_sailfish_get_xdg_window_rotation() ? "@gre@on"
+                                                              : "@red@off");
+
+        surface_draw_string(mud->surface, rotation_text, rotation_x,
+                            rotation_y, FONT_BOLD_12, rotation_colour);
+        surface_draw_string(mud->surface, "System-wide setting", rotation_x,
+                            rotation_y + 14, FONT_REGULAR_11, YELLOW);
+        surface_draw_string(mud->surface, "affects all apps", rotation_x,
+                            rotation_y + 26, FONT_REGULAR_11, YELLOW);
+    }
+#endif
+
     mud->surface->draw_string_shadow = mud->logged_in ? 1 : 0;
 }
 
@@ -992,6 +1034,36 @@ void mudclient_handle_additional_options_input(mudclient *mud) {
                 scene_gl_apply_sailfish_rotation(mud->scene);
 #endif
             }
+
+#ifdef SDL2
+            if (mudclient_sailfish_supports_xdg_window_rotation()) {
+                int rotation_x = 0;
+                int rotation_y = 0;
+                int rotation_width = 0;
+
+                mudclient_sailfish_xdg_rotation_bounds(
+                    ui_x, ui_y, &rotation_x, &rotation_y, &rotation_width);
+
+                if (mud->mouse_x >= rotation_x &&
+                    mud->mouse_x <= rotation_x + rotation_width &&
+                    mud->mouse_y > rotation_y - 12 &&
+                    mud->mouse_y < rotation_y + 4 &&
+                    mudclient_sailfish_set_xdg_window_rotation(
+                        !mudclient_sailfish_get_xdg_window_rotation())) {
+                    mudclient_sailfish_apply_orientation(mud);
+                    mudclient_on_resize(mud);
+
+                    mudclient_rebuild_ui_tab_panels(mud);
+                    mudclient_rebuild_options_panels(mud);
+                    mudclient_sync_options_panels(mud);
+
+#ifdef RENDER_GL
+                    surface_gl_apply_sailfish_rotation(mud->surface);
+                    scene_gl_apply_sailfish_rotation(mud->scene);
+#endif
+                }
+            }
+#endif
         }
 #endif
     }

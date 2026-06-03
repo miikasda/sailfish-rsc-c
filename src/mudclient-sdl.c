@@ -33,6 +33,11 @@ static void sailfish_rotate_touch(mudclient *mud, int window_width,
     }
 
     int orientation = mud->options->orientation;
+#ifdef SDL2
+    if (mudclient_sailfish_uses_xdg_window_rotation()) {
+        orientation = OPTIONS_ORIENTATION_PORTRAIT;
+    }
+#endif
     int rotated = orientation != OPTIONS_ORIENTATION_PORTRAIT;
 
     float base_width = rotated ? (float)mud->game_height : (float)mud->game_width;
@@ -102,9 +107,7 @@ static void sailfish_on_app_deactivated(void) {
 }
 
 static int sailfish_restore_osk_window(mudclient *mud) {
-    if (mud == NULL || mud->options == NULL ||
-        mud->options->orientation == OPTIONS_ORIENTATION_PORTRAIT ||
-        !sailfish_osk_is_visible()) {
+    if (mud == NULL || mud->options == NULL || !sailfish_osk_is_visible()) {
         return 0;
     }
 

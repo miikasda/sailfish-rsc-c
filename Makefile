@@ -55,6 +55,9 @@ SAILFISH_WRAPPER :=
 ifeq ($(SAILFISH), 1)
 CFLAGS += -DSAILFISH
 CXXFLAGS += -std=c++11 -DSAILFISH -fPIC
+DCONF_PKG ?= dconf
+CFLAGS += $(shell pkg-config --cflags $(DCONF_PKG))
+LDFLAGS += $(shell pkg-config --libs $(DCONF_PKG))
 endif
 
 ifeq ($(MALIIT), 1)
