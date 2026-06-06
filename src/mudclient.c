@@ -5503,6 +5503,10 @@ void mudclient_sdl1_on_resize(mudclient *mud, int width, int height) {
 void mudclient_on_resize(mudclient *mud) {
     int new_width = MUD_WIDTH;
     int new_height = MUD_HEIGHT;
+#if defined(SAILFISH) && defined(SDL2)
+    int old_width = mud->game_width;
+    int old_height = mud->game_height;
+#endif
 
 #if !defined(_3DS) && !defined(WII) && !defined(SDL12)
 #ifdef RENDER_GL
@@ -5595,6 +5599,14 @@ void mudclient_on_resize(mudclient *mud) {
     }
 
     mudclient_resize(mud);
+
+#if defined(SAILFISH) && defined(SDL2)
+    if (mudclient_sailfish_uses_xdg_window_rotation() &&
+        mud->panel_quests != NULL &&
+        (old_width != mud->game_width || old_height != mud->game_height)) {
+        mudclient_rebuild_ui_tab_panels(mud);
+    }
+#endif
 }
 
 
