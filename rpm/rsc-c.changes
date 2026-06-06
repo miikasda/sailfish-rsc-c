@@ -1,6 +1,12 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Sat Jun 06 2026 Miika Malin <miikasda@users.noreply.github.com> - 0.2.1-1
+- Fix multiple issues occurring on Sailfish OS 5.1
+- Add autorotation support, configurable from Additional Options
+- Warning: Autorotation uses a system-wide setting that affects all apps
+- Without autorotation, system gestures have incorrect rotation on Sailfish OS 5.1
+
 * Wed Mar 04 2026 Miika Malin <miikasda@users.noreply.github.com> - 0.2.0-1
 - Add configurable screen orientation support
 - Upstream changes (fog of war fix)
