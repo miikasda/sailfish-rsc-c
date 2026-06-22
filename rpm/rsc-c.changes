@@ -1,6 +1,10 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Mon Jun 22 2026 Miika Malin <miikasda@users.noreply.github.com> - 0.2.2-1
+- Fix client crash when opening the trade confirmation dialog
+- Harden trade confirmation parsing and text formatting against stack corruption
+
 * Sat Jun 06 2026 Miika Malin <miikasda@users.noreply.github.com> - 0.2.1-1
 - Fix multiple issues occurring on Sailfish OS 5.1
 - Add autorotation support, configurable from Additional Options
