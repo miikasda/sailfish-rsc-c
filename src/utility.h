@@ -145,7 +145,7 @@ void *unpack_data(const char *file_name, size_t extra_size, void *archive_data,
                   void *data_out, size_t *size_out);
 void *load_data(const char *file_name, size_t extra_size, void *archive_data,
                 size_t *size_out);
-void format_confirm_amount(int amount, char *formatted);
+void format_confirm_amount(int amount, char *formatted, size_t formatted_size);
 int get_ticks(void);
 void delay_ticks(int ticks);
 void get_level_difference_colour(int level_difference, char *colour);

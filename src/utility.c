@@ -458,12 +458,13 @@ int64_t encode_username(char *username) {
 void decode_username(int64_t encoded, char *decoded) {
     if (encoded < 0) {
         strcpy(decoded, "invalidName");
+        return;
     }
 
     int length = 0;
 
-    while (encoded != 0) {
-        char char_code = (encoded % 37);
+    while (encoded != 0 && length < MAX_USER_LENGTH) {
+        int char_code = encoded % 37;
         encoded /= 37;
 
         if (char_code == 0) {
@@ -608,51 +609,35 @@ void *load_data(const char *file_name, size_t extra_size, void *archive_data,
     return unpack_data(file_name, extra_size, archive_data, NULL, size_out);
 }
 
-void format_confirm_amount(int amount, char *formatted) {
-    sprintf(formatted, "%d", amount);
-
-    int formatted_length = (int)strlen(formatted);
-
-    for (int i = formatted_length - 3; i > 0; i -= 3) {
-        int begin_length = i;
-        char begin[begin_length + 1];
-        begin[begin_length] = '\0';
-
-        int end_length = formatted_length - i;
-        char end[end_length + 1];
-        end[end_length] = '\0';
-
-        strncpy(begin, formatted, begin_length);
-        strncpy(end, formatted + i, end_length);
-
-        sprintf(formatted, "%s,%s", begin, end);
-
-        formatted_length = strlen(formatted);
+void format_confirm_amount(int amount, char *formatted, size_t formatted_size) {
+    if (formatted_size == 0) {
+        return;
     }
+
+    formatted[0] = '\0';
+
+    if (amount < 0) {
+        snprintf(formatted, formatted_size, "%d", amount);
+        return;
+    }
+
+    char formatted_commas[15] = {0};
+    format_number_commas(amount, formatted_commas);
+
+    int formatted_length = (int)strlen(formatted_commas);
 
     if (formatted_length > 8) {
         int short_length = formatted_length - 8;
-        char short_num[short_length + 1];
-        short_num[short_length] = '\0';
 
-        strncpy(short_num, formatted, short_length);
-
-        char formatted_copy[formatted_length];
-        strcpy(formatted_copy, formatted);
-
-        sprintf(formatted, "@gre@%s million @whi@(%s)", short_num,
-                formatted_copy);
+        snprintf(formatted, formatted_size, "@gre@%.*s million @whi@(%s)",
+                 short_length, formatted_commas, formatted_commas);
     } else if (formatted_length > 4) {
         int short_length = formatted_length - 4;
-        char short_num[short_length + 1];
-        short_num[short_length] = '\0';
 
-        strncpy(short_num, formatted, short_length);
-
-        char formatted_copy[formatted_length];
-        strcpy(formatted_copy, formatted);
-
-        sprintf(formatted, "@cya@%s K @whi@(%s)", short_num, formatted_copy);
+        snprintf(formatted, formatted_size, "@cya@%.*s K @whi@(%s)",
+                 short_length, formatted_commas, formatted_commas);
+    } else {
+        snprintf(formatted, formatted_size, "%s", formatted_commas);
     }
 }
 
