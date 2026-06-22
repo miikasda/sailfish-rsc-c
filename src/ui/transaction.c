@@ -725,20 +725,31 @@ void mudclient_draw_transaction_items_confirm(
 
     for (int i = 0; i < transaction_confirm_item_count; i++) {
         int item_id = transaction_confirm_items[i];
+
+        if (item_id < 0 || item_id >= game_data.item_count) {
+            continue;
+        }
+
         char *item_name = game_data.items[item_id].name;
         size_t item_length = strlen(item_name);
 
-        size_t line_length = item_length + 15;
+        char amount[64] = {0};
+        size_t line_length = item_length + 1;
+
+        if (game_data.items[item_id].stackable == 0) {
+            format_confirm_amount(transaction_confirm_items_count[i], amount,
+                                  sizeof(amount));
+
+            line_length += strlen(amount) + 3;
+        }
+
         char item_line[line_length];
         memset(item_line, '\0', line_length);
 
-        strcpy(item_line, item_name);
-
         if (game_data.items[item_id].stackable == 0) {
-            strcat(item_line, " x ");
-
-            format_confirm_amount(transaction_confirm_items_count[i],
-                                  item_line + item_length + 3);
+            snprintf(item_line, line_length, "%s x %s", item_name, amount);
+        } else {
+            snprintf(item_line, line_length, "%s", item_name);
         }
 
         surface_draw_string_centre(mud->surface, item_line, x, y + i * 12,
@@ -783,8 +794,9 @@ void mudclient_draw_transaction_confirm(mudclient *mud, int dialog_x,
 
     char formatted_confirm[USERNAME_LENGTH + 37] = {0};
 
-    sprintf(formatted_confirm, "Please confirm your %s with @yel@%s",
-            is_trade ? "trade" : "duel", username);
+    snprintf(formatted_confirm, sizeof(formatted_confirm),
+             "Please confirm your %s with @yel@%s",
+             is_trade ? "trade" : "duel", username);
 
     surface_draw_string_centre(mud->surface, formatted_confirm,
                                dialog_x + (transaction_width / 2),
@@ -880,12 +892,12 @@ void mudclient_draw_transaction_confirm(mudclient *mud, int dialog_x,
         char confirmation_line[49] = {0};
 
         if (is_trade) {
-            strcpy(confirmation_line,
-                   "Remember that not all players are trustworthy");
+            snprintf(confirmation_line, sizeof(confirmation_line),
+                     "Remember that not all players are trustworthy");
         } else {
-            sprintf(confirmation_line,
-                    "If you are sure %s 'Accept' to begin the duel",
-                    mudclient_is_touch(mud) ? "tap" : "click");
+            snprintf(confirmation_line, sizeof(confirmation_line),
+                     "If you are sure %s 'Accept' to begin the duel",
+                     mudclient_is_touch(mud) ? "tap" : "click");
         }
 
         surface_draw_string_centre(mud->surface, confirmation_line,

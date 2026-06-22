@@ -1821,38 +1821,50 @@ void mudclient_packet_tick(mudclient *mud) {
 
         offset += 8;
 
-        mud->transaction_recipient_confirm_item_count =
+        int recipient_confirm_item_count =
             get_unsigned_byte(data, offset++, size);
 
-        for (int i = 0; i < mud->transaction_recipient_confirm_item_count;
-             i++) {
-            mud->transaction_recipient_confirm_items[i] =
-                get_unsigned_short(data, offset, size);
+        mud->transaction_recipient_confirm_item_count =
+            recipient_confirm_item_count;
+        if (mud->transaction_recipient_confirm_item_count > TRADE_ITEMS_MAX) {
+            mud->transaction_recipient_confirm_item_count = TRADE_ITEMS_MAX;
+        }
+
+        for (int i = 0; i < recipient_confirm_item_count; i++) {
+            int item_id = get_unsigned_short(data, offset, size);
 
             offset += 2;
 
-            mud->transaction_recipient_confirm_items_count[i] =
-                get_unsigned_int(data, offset, size);
+            int item_count = get_unsigned_int(data, offset, size);
 
             offset += 4;
+
+            if (i < TRADE_ITEMS_MAX) {
+                mud->transaction_recipient_confirm_items[i] = item_id;
+                mud->transaction_recipient_confirm_items_count[i] = item_count;
+            }
         }
 
-        mud->transaction_confirm_item_count =
-            get_unsigned_byte(data, offset++, size);
+        int confirm_item_count = get_unsigned_byte(data, offset++, size);
+
+        mud->transaction_confirm_item_count = confirm_item_count;
         if (mud->transaction_confirm_item_count > TRADE_ITEMS_MAX) {
             mud->transaction_confirm_item_count = TRADE_ITEMS_MAX;
         }
 
-        for (int i = 0; i < mud->transaction_confirm_item_count; i++) {
-            mud->transaction_confirm_items[i] =
-                get_unsigned_short(data, offset, size);
+        for (int i = 0; i < confirm_item_count; i++) {
+            int item_id = get_unsigned_short(data, offset, size);
 
             offset += 2;
 
-            mud->transaction_confirm_items_count[i] =
-                get_unsigned_int(data, offset, size);
+            int item_count = get_unsigned_int(data, offset, size);
 
             offset += 4;
+
+            if (i < TRADE_ITEMS_MAX) {
+                mud->transaction_confirm_items[i] = item_id;
+                mud->transaction_confirm_items_count[i] = item_count;
+            }
         }
         break;
     }
